@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Circle
 
-# Load image
+"""# Load image
 img1 = cv2.imread('/home/michael/Pictures/Screenshot_20211219_013904.png')
 
 # detect chessboard pattern
@@ -36,7 +36,30 @@ tf_img_warp = transform.warp(img1, tform.inverse, mode = 'symmetric')
 
 # Display image
 cv2.imshow('img', tf_img_warp)
-cv2.waitKey()
+cv2.waitKey()"""
+
+class Homography:
+    """Performs homographic perspective correction on images such that the reference object (chessboard) and image planes are 
+    approximately parallel"""
+
+    def __init__(self, img_name) -> None:
+        self.img = cv2.imread(img_name)
+        self.chess_pattern = detect_chessboard.Chessboard(img_name)
+        self.points_of_interest = self.chess_pattern.points_of_interest
+        self.projection = self.chess_pattern.projection()
+
+
+    def perspective_transform(self):
+        # estimate the homographic transform needed to correct the perspective of the image
+        tform = transform.estimate_transform('projective', self.points_of_interest, self.projection)
+
+        # perform perspective correction 
+        tf_img_warp = transform.warp(self.img1, tform.inverse, mode = 'symmetric')
+
+        return tf_img_warp
+
+
+
 
 """
 # Alternative, opencv docs method (https://docs.opencv.org/4.x/d9/dab/tutorial_homography.html#tutorial_homography_Demo1): 
