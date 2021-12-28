@@ -9,10 +9,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Circle
 
-
+# Load image
 img1 = cv2.imread('/home/michael/Pictures/Screenshot_20211219_013904.png')
+
+# detect chessboard pattern
 chess_pattern = detect_chessboard.Chessboard('/home/michael/Pictures/Screenshot_20211219_013904.png')
+
+# extract points of interest, i.e., the corners of the chessboard pattern
 points_of_interest = chess_pattern.points_of_interest
+
+# define target coordinates for the corrected chessboard image. Essentially "telling"
+# the computer what the correct homography is
 projection = chess_pattern.projection()
 print(points_of_interest)
 print(projection)
@@ -21,12 +28,20 @@ print(type(projection))
 print(shape(points_of_interest))
 print(shape(projection))
 
+# estimate the homographic transform needed to correct the perspective of the image
 tform = transform.estimate_transform('projective', points_of_interest, projection)
+
+# perform perspective correction 
 tf_img_warp = transform.warp(img1, tform.inverse, mode = 'symmetric')
+
+# Display image
 cv2.imshow('img', tf_img_warp)
 cv2.waitKey()
 
-"""color = 'green'
+"""
+# Alternative, opencv docs method (https://docs.opencv.org/4.x/d9/dab/tutorial_homography.html#tutorial_homography_Demo1): 
+
+color = 'green'
 patches = []
 fig, ax = plt.subplots(1,2, figsize=(15, 10), dpi = 80)
 for coordinates in (points_of_interest + projection):

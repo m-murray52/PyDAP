@@ -43,6 +43,7 @@ class Chessboard:
 
             # Return an array from the elements of a at given indices
             self.points_of_interest = np.ndarray.take(self.corners2, [[0, 1], [14, 15], [80, 81], [94, 95]])
+            #self.points_of_interest = np.ndarray.take(self.corners2, [[0, 1], [2, 3], [16, 17], [18, 19]])
             print(self.corners2[47])
 
         # Draw and display the corners
@@ -63,7 +64,9 @@ class Chessboard:
         #print(self.points_of_interest)
 
         # Target projection 
+        # height is multiplied by 7 because 7 squares are being used. Likewise for width with 5 squares. 
         projection = np.array([[x0, y0], [x0, y0 + 7*height], [x0 - 5*width, y0], [x0 - 5*width, y0 + 7*height]])
+        #projection = np.array([[x0, y0], [x0, y0 + height], [x0 - width, y0], [x0 - width, y0 + height]])
         return projection
 
 #chess_img = Chessboard(args.image)
