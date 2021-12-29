@@ -130,15 +130,7 @@ def find_average(frames, average_type):
         cv2.waitKey(0)
         return diff
 
-# ROI seletor
-def select_roi(image):
-    # Select rectangular region of interest from average grayscale image that approximately corresponds to the beam area
-    # Select ROI
-    from_centre = False
-    roi = cv2.selectROI(image, from_centre)
-    # Crop roi image, needed to create structuring element
-    cropped_roi = image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])]
-    return cropped_roi, roi
+
 
 
 def resize_w_aspect_ratio(image, width=None, height=None, inter=cv2.INTER_AREA):
@@ -314,7 +306,7 @@ def mask_img(method, gradient, image):
 
 
 # Create bounding box function
-def bounding_box(src, mask, area_calibration, width_calibration, height_calibration, kernel_size, iterations = 1):
+def bounding_box(src, mask, correct_mask, area_calibration, width_calibration, height_calibration, kernel_size, iterations = 1):
 
     # Square shaped Structuring Element
     #kernel = np.ones((kernel_size, kernel_size))
@@ -346,11 +338,40 @@ def bounding_box(src, mask, area_calibration, width_calibration, height_calibrat
     print(len(approx))
     x, y, w, h = cv2.boundingRect(approx)
 
-    calibrated_area = area*area_calibration
+
+    # Repeat for perspective corrected image
+    kernel2 = cv2.getStructuringElement(cv2.MORPH_CROSS , (kernel_size, kernel_size))
+    imgDil2 = cv2.dilate(correct_mask, kernel2, iterations)
+    #closedImg = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    #cv2.imshow("Closed Image", closedImg)
+    #cv2.waitKey(0)
+    contours2, hierarchy2 = cv2.findContours(imgDil2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    #contours, hierarchy = cv2.findContours(closedImg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    cnt2 = contours2[0]
+
+    # Count number of non-zero pixels in binary mask
+    non_zero_pixels2 = cv2.countNonZero(correct_mask)
+
+
+    # Create Bounding Box   
+    correct_area = cv2.contourArea(cnt2)
+   
+    correct_area_non_zero_pixels = non_zero_pixels2
+    rect2 = cv2.minAreaRect(cnt2)
+    box2 = cv2.boxPoints(rect2)
+    box2 = np.int0(box2)
+    (x2, y2), (height2, width2), angle2 = rect2
+
+    peri2 = cv2.arcLength(cnt2, True)
+    approx2 = cv2.approxPolyDP(cnt2, 0.02 * peri2, True)
+    print(len(approx))
+    x2, y2, w2, h2 = cv2.boundingRect(approx)
+
+    correct_calibrated_area = correct_area*area_calibration
     # had to swap height and width calibration because video is rotated
-    calibrated_width = width*height_calibration
-    calibrated_height = height*width_calibration
-    calibrate_area_non_zero = area_non_zero_pixels*area_calibration
+    correct_calibrated_width = width2*height_calibration
+    correct_calibrated_height = height2*width_calibration
+    correct_calibrate_area_non_zero = correct_area_non_zero_pixels*area_calibration
 
     #cv2.drawContours(image=image_copy, contours=contours, contourIdx=-1, color=(0, 255, 0), thickness=2, lineType=cv2.LINE_AA)
     #can also use cv2.connectedComponentsWithStats
@@ -359,12 +380,12 @@ def bounding_box(src, mask, area_calibration, width_calibration, height_calibrat
     #logging.info('Time until seed selection window since threshold selection: {} s'.format(time_until_region_growing))
 
     cv2.drawContours(src,[box],0,(0,255, 0),2)
-    cv2.putText(src, "Bounding Box Area: {0:.3g}".format(calibrated_area) + " mm^2", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Bounding Box Area (px): " + str(int(area)) + " px", (20,  80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Bounding Box Height: {0:.3g}".format(calibrated_width) + " mm", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Bounding Width: {0:.3g}".format(calibrated_height) + " mm", (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Beam Area: {0:.3g}".format(calibrate_area_non_zero) + " mm^2", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Number non-zero pixels: " + str(int(area_non_zero_pixels)) + " px", (20, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(src, "Bounding Box Area: {0:.3g}".format(correct_calibrated_area) + " mm^2", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(src, "Bounding Box Area (px): " + str(int(correct_area)) + " px", (20,  80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(src, "Bounding Box Height: {0:.3g}".format(correct_calibrated_width) + " mm", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(src, "Bounding Width: {0:.3g}".format(correct_calibrated_height) + " mm", (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(src, "Beam Area: {0:.3g}".format(correct_calibrate_area_non_zero) + " mm^2", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(src, "Number non-zero pixels: " + str(int(correct_area_non_zero_pixels)) + " px", (20, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     cv2.putText(src, "Area Calibration Factor: {0:.3g}".format(area_calibration) + " mm^2/px", (20, 280), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     cv2.putText(src, "Width Calibration Factor: {0:.3g}".format(height_calibration) + " mm/px", (20, 320), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     cv2.putText(src, "Height Calibration Factor: {0:.3g}".format(width_calibration) + " mm/px", (20, 360), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
@@ -468,12 +489,26 @@ grey_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 #cv2.imwrite('greyscale_beam.png', grey_image)
 
+# ROI seletor
+def select_roi(image):
+    # Select rectangular region of interest from average grayscale image that approximately corresponds to the beam area
+    # Select ROI
+    from_centre = False
+    roi = cv2.selectROI(image, from_centre)
+    # Crop roi image, needed to create structuring element
+    cropped_roi = image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])]
+    return cropped_roi, roi
 
-def roi_image(image, method):
-# creates binary image from input image
-    #grey_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+# select roi
+roi_image, roi = select_roi(image)
+
+def binary_image(image, roi_img, roi, method):
+
+    # creates binary image from input image
+    grey_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # ROI seletor
-    def select_roi(image):
+    """def select_roi(image):
         # Select rectangular region of interest from average grayscale image that approximately corresponds to the beam area
         # Select ROI
         from_centre = False
@@ -482,12 +517,12 @@ def roi_image(image, method):
         cropped_roi = image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])]
         return cropped_roi, roi
 
-    roi_image, roi = select_roi(image)
+    roi_image, roi = select_roi(image)"""
 
     if method == 'grey':
 
     # Grey ROI image
-        grey_roi = cv2.cvtColor(roi_image, cv2.COLOR_BGR2GRAY)
+        grey_roi = cv2.cvtColor(roi_img, cv2.COLOR_BGR2GRAY)
         cv2.imwrite('grey_roi.png', grey_roi)
         # Apply white top hat to grey ROI and pass to binary mask function
         # Apply white top hat to grey image to reduce background illumination
@@ -502,124 +537,52 @@ def roi_image(image, method):
     # Source mask image
         src_mask = cropped_white_top_hat
       
+        greyscale_mask = cv2.bitwise_and(grey_roi, src_mask)
 
     elif method == 'colour':
+        grey_roi = cv2.cvtColor(roi_img, cv2.COLOR_BGR2GRAY)
         src_mask = roi_image
+        greyscale_mask = cv2.bitwise_and(grey_roi, src_mask)
 
     elif method == 'kmeans':
-        src_mask = roi_image
+        src_mask = roi_img
+        roi_mask = mask_img(args.method, args.gradient, src_mask)
+        greyscale_mask = cv2.cvtColor(roi_mask, cv2.COLOR_BGR2GRAY)
+
+    # Apply otsu to roi, then add to greyscale image with black background
+    otsu_thresh, otsu_greyscale_roi = cv2.threshold(greyscale_mask, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    cv2.imwrite('otsu_roi.png', otsu_greyscale_roi)
+    # image.shape[:2]
+    # Create black background with dimensions of greyscale image
+    grey_image[:,:] = np.ones(grey_image.shape[:2])
+
+    # Add greyscale_mask to original greyscale image 
+    #grey_image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])] = greyscale_mask
+    grey_image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])] = otsu_greyscale_roi
+
+    # Apply Otsu threshold to masked image to create image to use for seed selection
+    ret, binary_mask = cv2.threshold(grey_image, otsu_thresh, 255, cv2.THRESH_BINARY)
         
     
 
-    return src_mask 
+    return binary_mask
 
 # Generate binary mask image from L*a*b* space image or region growing or combination of the two
 #mask_image = maskImg(args.method, roi_image)
-correct_perspective_roi = roi_image(corrected_image, args.method)
+correct_perspective_bin = binary_image(corrected_image, roi_image, roi, args.method)
 
-# obtain binary mask of roi if coulour or greyscale used. If kmeans is used, output blurred greyscale image
-correct_perspective_bin = mask_img(args.method, args.gradient, correct_perspective_roi)
+# uncorrected binary, use the same roi
+uncorrected_binary = binary_image(image, roi_image, roi, args.method)
 
-cv2.imwrite('mage_for_bin_mask.png', correct_perspective_bin)
+cv2.imwrite('image_for_bin_mask.png', correct_perspective_bin)
 
-
-##########################################################################################
-# Start second timer for colour processing, if using greyscale don't start new timer
-
-
-###########################################################################################
-
-
-"""# convert mask image to greyscale if method is kmeans
-if args.method == 'kmeans':
-    greyscale_mask = cv2.cvtColor(mask_image, cv2.COLOR_BGR2GRAY)
-    #cv2.imshow('grayscale kmeans', greyscale_mask)
-    cv2.imwrite('greyscale_mask.png', greyscale_mask)
-
-
-else:
-
-    # Find product of the region of interest of the greyscale image and the binary mask image (b* or grey)
-    greyscale_mask = cv2.bitwise_and(grey_roi, mask_image)
-    cv2.imwrite('greyscale_mask.png', greyscale_mask)"""
-
-
-if args.threshold == '25max':
-    # Estimate IEC defined beam area
-   
-
-
-    #Threshold using 25% of maximum greyscale mask
-    biggest = np.amax(greyscale_mask)
-    threshold = 0.25*biggest
-    ret,thresh_25_max = cv2.threshold(greyscale_mask, threshold, 255, cv2.THRESH_BINARY)
-    #cv2.imshow('>25% Max Intensity', thresh_25_max)
-    #cv2.waitKey(0)
-    cv2.imwrite('25_max.png', thresh_25_max)
-    #print(threshold, biggest)
-
-
-    # Create black background with dimensions of greyscale image
-    grey_image[:,:] = np.ones(grey_image.shape[:2])
-
-    grey_image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])] = thresh_25_max
-    # Add greyscale_25_mask to original greyscale image 
-    #grey_image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])] = greyscale_25_mask
-
-    # Apply Otsu threshold to masked image to create image to use for seed selection
-    img_for_seed = grey_image
-
-elif args.method == 'kmeans':
-
-    # Apply otsu to roi, then add to greyscale image with black background
-    otsu_thresh, otsu_greyscale_roi = cv2.threshold(greyscale_mask, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-
-    cv2.imwrite('otsu_roi.png', otsu_greyscale_roi)
-# image.shape[:2]
-    # Create black background with dimensions of greyscale image
-    grey_image[:,:] = np.ones(grey_image.shape[:2])
-
-    # Add greyscale_mask to original greyscale image 
-    #grey_image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])] = greyscale_mask
-    grey_image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])] = otsu_greyscale_roi
-
-    # Apply Otsu threshold to masked image to create image to use for seed selection
-    ret, img_for_seed = cv2.threshold(grey_image, otsu_thresh, 255, cv2.THRESH_BINARY)
-    #img_for_seed  = grey_image
-    cv2.imwrite('image_for_seed_growth.png', img_for_seed)
-    cv2.imshow('Mask image', img_for_seed)
-    cv2.waitKey(0)
-
-else:
-    # Apply otsu to roi, then add to greyscale image with black background
-    otsu_thresh, otsu_greyscale_roi = cv2.threshold(greyscale_mask, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-
-    cv2.imwrite('otsu_roi.png', otsu_greyscale_roi)
-# image.shape[:2]
-    # Create black background with dimensions of greyscale image
-    grey_image[:,:] = np.ones(grey_image.shape[:2])
-
-    # Add greyscale_mask to original greyscale image 
-    #grey_image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])] = greyscale_mask
-    grey_image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])] = otsu_greyscale_roi
-
-    # Apply Otsu threshold to masked image to create image to use for seed selection
-    ret, img_for_seed = cv2.threshold(grey_image, otsu_thresh, 255, cv2.THRESH_BINARY)
-    #img_for_seed  = grey_image
-    cv2.imwrite('image_for_seed_growth.png', img_for_seed)
-    cv2.imshow('Mask image', img_for_seed)
-    cv2.waitKey(0)
-
-
-
-##########################################################################
-
-
-############################################################################
 
 # Find frame width and height. Use .shape. For the moment process only one frame
 # We convert the resolutions from float to integer.
-#frame_height, frame_width = image.shape[:2]
+frame_height, frame_width = correct_perspective_bin.shape[:2]
+
+# Calibrate dimensions based on perspective corrected image
 
 # Calibrated width 
 calibration_factor_w = calibrate_width(distance, frame_width)
@@ -631,7 +594,7 @@ calibration_factor_h = calibrate_height(distance, frame_height)
 calibration_factor_a = calibrate_area(calibration_factor_w, calibration_factor_h)
 
 # Apply contours to cropped_histogram_equalised_product_image to generate bounding box and display area
-masked_frame = bounding_box(src= image, mask= img_for_seed, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h, kernel_size= 3, iterations= 1)
+masked_frame = bounding_box(src= image, mask= uncorrected_binary, correct_mask= correct_perspective_bin, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h, kernel_size= 3, iterations= 1)
 cv2.imwrite('masked_frame_w_bb.png', masked_frame)
 
 #cv2.imshow('Bounding box', masked_frame)
@@ -659,7 +622,7 @@ logging.info('Time of masked image creation from start: {} s'.format(total_time)
 
 # Function to write video
 
-def write_masked_video(frames_list, mask, area_calibration, width_calibration, height_calibration):
+def write_masked_video(frames_list, mask, corrected_mask, area_calibration, width_calibration, height_calibration):
     # Write to video when called
     out = cv2.VideoWriter(args.output, cv2.VideoWriter_fourcc('M','J','P','G'), fps, (frame_width,frame_height))
 
@@ -679,7 +642,7 @@ def write_masked_video(frames_list, mask, area_calibration, width_calibration, h
             count += 1
 
         # Apply bounding box to frame 
-            masked_frame = bounding_box(src=masked_frame, mask=mask, area_calibration= area_calibration, width_calibration= width_calibration, height_calibration= height_calibration, kernel_size= 3, iterations=1)
+            masked_frame = bounding_box(src=masked_frame, mask=mask, corrected_mask=corrected_mask, area_calibration= area_calibration, width_calibration= width_calibration, height_calibration= height_calibration, kernel_size= 3, iterations=1)
 
         # Apply contours
             #masked_frame = fitcontours(masked_frame, mask)
@@ -698,7 +661,7 @@ def write_masked_video(frames_list, mask, area_calibration, width_calibration, h
     cap.release()
     cv2.destroyAllWindows()
 
-write_masked_video(frames_list= frames, mask= img_for_seed, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h)
+write_masked_video(frames_list= frames, mask= uncorrected_binary, corrected_mask= correct_perspective_bin, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h)
 
 
 logging.info('Area Calibration Factor: {}'.format(calibration_factor_a))
