@@ -16,8 +16,8 @@ import homography
 
 # load video and select frame averaging method
 parser = argparse.ArgumentParser(description='Code for calculating the height, width, and area of an x-ray beam by analysis of images of exposed phosphor scintillation material')
-parser.add_argument('--video', type=str, required= False, help='path to image file')
-parser.add_argument('--average', type=str, required= False, help='select method for averaging frames: type mean" or "median" or "no" for no average calculation, instead an image near middle of recording is selected')
+parser.add_argument("--video", type=str, required= False, help='path to image file')
+parser.add_argument("--average", type=str, required= False, help='select method for averaging frames: type mean" or "median" or "no" for no average calculation, instead an image near middle of recording is selected')
 parser.add_argument("--threshold", type=str, required=False, help="To estimate 25max intensity type '25max'. By default a user selected threshold is used via trackbar.")    
 parser.add_argument("--method", type=str, required= True, help="select colour filtering (colour), greyscale (grey), or 'kmeans' to use kmeans clustering")
 parser.add_argument("--gradient", type=str, required= False, help="type 'yes' to use edge enhanced threshold, for use with grey method")
@@ -376,8 +376,8 @@ def bounding_box(src, mask, correct_mask, area_calibration, width_calibration, h
     cv2.putText(src, "Beam Area: {0:.3g}".format(correct_calibrate_area_non_zero) + " mm^2", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     cv2.putText(src, "Number non-zero pixels: " + str(int(correct_area_non_zero_pixels)) + " px", (20, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     cv2.putText(src, "Area Calibration Factor: {0:.3g}".format(area_calibration) + " mm^2/px", (20, 280), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Width Calibration Factor: {0:.3g}".format(height_calibration) + " mm/px", (20, 320), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Height Calibration Factor: {0:.3g}".format(width_calibration) + " mm/px", (20, 360), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(src, "Width Calibration Factor: {0:.3g}".format(width_calibration) + " mm/px", (20, 320), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(src, "Height Calibration Factor: {0:.3g}".format(height_calibration) + " mm/px", (20, 360), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
     
     
@@ -453,7 +453,7 @@ if args.average == 'median' or args.average == 'mean':
     image = np.uint8(image)
 
 else:
-    frame = cv2.imread('frame360.jpg')
+    frame = cv2.imread('frame128.jpg')
 #image = cv2.imread('median.jpg')
 #image = cv2.imread('mean.jpg')
     image = np.uint8(frame)
@@ -493,7 +493,8 @@ def select_roi(image):
 roi_image, roi = select_roi(image)
 
 def binary_image(image, roi_img, roi, method):
-
+    
+    image = image.astype('uint8')*255
     # creates binary image from input image
     grey_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # ROI seletor
@@ -612,12 +613,13 @@ logging.info('Time of masked image creation from start: {} s'.format(total_time)
 # Function to write video
 
 def write_masked_video(frames_list, mask, corrected_mask, area_calibration, width_calibration, height_calibration):
-    # Write to video when called
-    out = cv2.VideoWriter(args.output, cv2.VideoWriter_fourcc('M','J','P','G'), fps, (frame_width,frame_height))
+    
 
     # Load Video Stream
     video_cap = cv2.VideoCapture(args.video)
 
+    # Write to video when called
+    out = cv2.VideoWriter(args.output, cv2.VideoWriter_fourcc('M','J','P','G'), fps, (frame_width,frame_height))
     # Frame counter
 
     count = 0
@@ -631,8 +633,9 @@ def write_masked_video(frames_list, mask, corrected_mask, area_calibration, widt
             count += 1
 
         # Apply bounding box to frame 
-            masked_frame = bounding_box(src=masked_frame, mask=mask, corrected_mask=corrected_mask, area_calibration= area_calibration, width_calibration= width_calibration, height_calibration= height_calibration, kernel_size= 3, iterations=1)
-
+            masked_frame = bounding_box(src=masked_frame, mask=mask, correct_mask=corrected_mask, area_calibration= area_calibration, width_calibration= width_calibration, height_calibration= height_calibration, kernel_size= 3, iterations=1)
+            cv2.imshow('masked frame', masked_frame)
+            cv2.waitKey(0)
         # Apply contours
             #masked_frame = fitcontours(masked_frame, mask)
 

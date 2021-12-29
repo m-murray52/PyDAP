@@ -54,8 +54,10 @@ class Homography:
         tform = transform.estimate_transform('projective', self.points_of_interest, self.projection)
 
         # perform perspective correction 
-        tf_img_warp = transform.warp(self.img1, tform.inverse, mode = 'symmetric')
+        tf_img_warp = transform.warp(self.img, tform.inverse, mode = 'symmetric')
 
+        cv2.imshow('Transformed image', tf_img_warp)
+        cv2.waitKey(0)
         return tf_img_warp
 
 

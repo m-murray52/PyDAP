@@ -1,13 +1,13 @@
 import numpy as np
 import cv2 
 import glob
-import argparse
+#import argparse
 
 
-parser = argparse.ArgumentParser(description='Module to determined correct chessboard coordinates for homography')
-parser.add_argument('--image', type=str, required= False, help='Input image')
+#parser = argparse.ArgumentParser(description='Module to determined correct chessboard coordinates for homography')
+#parser.add_argument('--image', type=str, required= False, help='Input image')
 
-args = parser.parse_args()
+#args = parser.parse_args()
 
 
 class Chessboard:
@@ -30,8 +30,11 @@ class Chessboard:
 
     # Arrays to store object points and image points from all the images.
         
-        self.img = cv2.imread(img)
+        self.img = img
         self.gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+
+        cv2.imshow('chessboard', self.gray)
+        cv2.waitKey(0)
         # Find the chess board corners
         ret, self.corners = cv2.findChessboardCorners(self.gray, (8,6), None)
 
