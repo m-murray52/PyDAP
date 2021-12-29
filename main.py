@@ -1,19 +1,9 @@
-#!source env/bin/activate
+
 
 '''
 Code for calculating the height, width, and area of an x-ray beam by analysis of images of
 exposed phosphor scintillation material
 
-
-Usage:
-  main.py [<video>] [<average_image_method>]
-
-  Click on the image to set seed point
-
-Keys:
-  f     - toggle floating range
-  c     - toggle 4/8 connectivity
-  ESC   - exit
 '''
 import cv2 
 import numpy as np 
