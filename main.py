@@ -531,7 +531,12 @@ def binary_image(image, roi_img, roi, method):
 
     elif method == 'colour':
         grey_roi = cv2.cvtColor(roi_img, cv2.COLOR_BGR2GRAY)
-        src_mask = roi_image
+        src_mask = roi_mask = mask_img(args.method, args.gradient, roi_img)
+        cv2.imshow('grey roi', grey_roi)
+        cv2.waitKey(0)
+        cv2.imshow('roi', src_mask)
+        cv2.waitKey(0)
+        # src_mask needs to be binary, so call mask_img()
         greyscale_mask = cv2.bitwise_and(grey_roi, src_mask)
 
     elif method == 'kmeans':
