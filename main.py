@@ -1,5 +1,4 @@
 
-
 '''
 Code for calculating the height, width, and area of an x-ray beam by analysis of images of
 exposed phosphor scintillation material
