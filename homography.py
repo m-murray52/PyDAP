@@ -42,9 +42,9 @@ class Homography:
     """Performs homographic perspective correction on images such that the reference object (chessboard) and image planes are 
     approximately parallel"""
 
-    def __init__(self, img_name) -> None:
-        self.img = cv2.imread(img_name)
-        self.chess_pattern = detect_chessboard.Chessboard(img_name)
+    def __init__(self, image) -> None:
+        self.img = image
+        self.chess_pattern = detect_chessboard.Chessboard(image)
         self.points_of_interest = self.chess_pattern.points_of_interest
         self.projection = self.chess_pattern.projection()
 
