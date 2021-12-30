@@ -58,7 +58,7 @@ class Chessboard:
         cv2.waitKey()
         print(self.corners2)
 
-    def projection(self, height, width) -> np.ndarray:
+    def projection(self) -> np.ndarray:
         
         height = self.height
         width = self.width

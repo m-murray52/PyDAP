@@ -297,7 +297,7 @@ def mask_img(method, gradient, image):
 
 
 # Create bounding box function
-def bounding_box(src, mask, correct_mask, area_calibration, width_calibration, height_calibration, kernel_size, iterations = 1):
+def bounding_box(src, mask, area_calibration, width_calibration, height_calibration, kernel_size, iterations = 1):
 
     # Square shaped Structuring Element
     #kernel = np.ones((kernel_size, kernel_size))
@@ -360,7 +360,7 @@ def bounding_box(src, mask, correct_mask, area_calibration, width_calibration, h
     return src
 
 
-def calibrate_height(distance, frame_height):
+def calibrate_height(distance, frame_height=1080):
     # Function to calculate area per pixel based on camera FOV, focal length, and distance of object from lens. 
     # Area of camera sensor is 3.76 x 2.74 mm according to docs
     y = 2.74
@@ -384,7 +384,7 @@ def calibrate_height(distance, frame_height):
     return Cy
 
 
-def calibrate_width(distance, frame_width):
+def calibrate_width(distance, frame_width=1920):
     # Function to calculate area per pixel based on camera FOV, focal length, and distance of object from lens. 
     # Area of camera sensor is 3.76 x 2.74 mm according to docs
     x= 3.76
@@ -420,8 +420,8 @@ def calibrate_area(pixel_width, pixel_height):
     # Calibrate contour area
     return C_area
 
-def transform_perspective(frame, transform):
-    tf_img_warp = transform.warp(frame, transform.inverse, mode = 'symmetric')
+def transform_perspective(frame, homography_transform):
+    return transform.warp(frame, homography_transform.inverse, mode = 'symmetric')
 
 
 # Find median/mean image
@@ -436,20 +436,37 @@ else:
 #image = cv2.imread('median.jpg')
 #image = cv2.imread('mean.jpg')
     image = np.uint8(frame)
+    calibration_img = image
 
 
 
 # Enhance contrast of blue, green, and red channels using histogram equalisation
 blue, green, red = cv2.split(image)
 
+# Calibrate dimensions based on perspective corrected image
+
+# Calibrated width 
+calibration_factor_w = calibrate_width(distance, frame_width)
+
+# Calibrated height
+calibration_factor_h = calibrate_height(distance, frame_height)
+
+# Calibration factor for area
+calibration_factor_a = calibrate_area(calibration_factor_w, calibration_factor_h)
 
 'Processing to determine area:'
 # define homography of image with chessboard pattern
-homography_img = homography.Homography(image)
+homography_img = homography.Homography(image, calibration_image=calibration_img, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h)
 
 # Correct perspective
 homography_transform = homography_img.perspective_transform()
 corrected_image = transform_perspective(frame, homography_transform)
+
+# Convert to uint8
+#corrected_image = np.uint8(corrected_image)
+#corrected_image = corrected_image.astype('uint8')*255
+#cv2.imshow('corrected image', corrected_image)
+#cv2.waitKey(0)
 
 # Convert the median/mean image to grayscale
 #grey_image = cv2.cvtColor(contrast_enhanced, cv2.COLOR_BGR2GRAY)
@@ -554,18 +571,9 @@ cv2.imwrite('image_for_bin_mask.png', correct_perspective_bin)
 
 # Find frame width and height. Use .shape. For the moment process only one frame
 # We convert the resolutions from float to integer.
-frame_height, frame_width = correct_perspective_bin.shape[:2]
+#frame_height, frame_width = correct_perspective_bin.shape[:2]
 
-# Calibrate dimensions based on perspective corrected image
 
-# Calibrated width 
-calibration_factor_w = calibrate_width(distance, frame_width)
-
-# Calibrated height
-calibration_factor_h = calibrate_height(distance, frame_height)
-
-# Calibration factor for area
-calibration_factor_a = calibrate_area(calibration_factor_w, calibration_factor_h)
 
 # Apply contours to cropped_histogram_equalised_product_image to generate bounding box and display area
 masked_frame = bounding_box(src= image, mask= correct_perspective_bin, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h, kernel_size= 3, iterations= 1)
@@ -645,7 +653,6 @@ logging.info('Width Calibration Factor: {}'.format(calibration_factor_w))
 logging.info('Height Calibration Factor: {}'.format(calibration_factor_h))
 logging.info('Frame Width: {}'.format(frame_width))
 logging.info('Frame Height: {}'.format(frame_height))
-
 
 
 
