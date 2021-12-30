@@ -246,7 +246,7 @@ def mask_img(method, gradient, image):
         # write contrast enhanced green
         #cv2.imwrite('contrast_enhanced_green_channel.png', green)
         #
-        histogram_eq_green = cv2.equalizeHist(green)
+        #histogram_eq_green = cv2.equalizeHist(green)
         #cv2.imshow('Green equalised histogram', green)
         #cv2.waitKey(0)
         
@@ -421,7 +421,8 @@ def calibrate_area(pixel_width, pixel_height):
     return C_area
 
 def transform_perspective(frame, homography_transform):
-    return transform.warp(frame, homography_transform.inverse, mode = 'symmetric')
+    transformed_img = transform.warp(frame, homography_transform.inverse, mode = 'symmetric')
+    return (transformed_img*255).astype(np.uint8)
 
 
 # Find median/mean image
@@ -465,12 +466,12 @@ corrected_image = transform_perspective(frame, homography_transform)
 # Convert to uint8
 #corrected_image = np.uint8(corrected_image)
 #corrected_image = corrected_image.astype('uint8')*255
-#cv2.imshow('corrected image', corrected_image)
-#cv2.waitKey(0)
+cv2.imshow('corrected image', corrected_image)
+cv2.waitKey(0)
 
 # Convert the median/mean image to grayscale
 #grey_image = cv2.cvtColor(contrast_enhanced, cv2.COLOR_BGR2GRAY)
-grey_image = cv2.cvtColor(corrected_image, cv2.COLOR_BGR2GRAY)
+#grey_image = cv2.cvtColor(corrected_image, cv2.COLOR_BGR2GRAY)
 
 #cv2.imwrite('greyscale_beam.png', grey_image)
 
