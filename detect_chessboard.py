@@ -17,11 +17,14 @@ class Chessboard:
     """
     
 
-    def __init__(self, img, objpoints = [], imgpoints=[]) -> None:
+    def __init__(self, img, square_height, square_width, objpoints = [], imgpoints=[]) -> None:
        
         # termination criteria
         self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-    
+
+        # Define height and width of chessboard squares
+        self.height = square_height
+        self.width = square_width
 
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
         self.objp = np.zeros((6*7,3), np.float32)
@@ -55,9 +58,11 @@ class Chessboard:
         cv2.waitKey()
         print(self.corners2)
 
-    def projection(self, height=83.3, width=83.3) -> np.ndarray:
+    def projection(self, height, width) -> np.ndarray:
         
-    
+        height = self.height
+        width = self.width
+
         # create projection, e.g. (h, w) = (85, 85)
         # Co-ordinates of top right corner (will change later to top left)
         x0 = self.points_of_interest[0][0] 
@@ -67,7 +72,8 @@ class Chessboard:
         #print(self.points_of_interest)
 
         # Target projection 
-        # height is multiplied by 7 because 7 squares are being used. Likewise for width with 5 squares. 
+        # height is multiplied by 7 because 7 squares are being used, since a n 8x6 chessboard is being detected.
+        # Likewise for width with 5 squares. 
         projection = np.array([[x0, y0], [x0, y0 + 7*height], [x0 - 5*width, y0], [x0 - 5*width, y0 + 7*height]])
         #projection = np.array([[x0, y0], [x0, y0 + height], [x0 - width, y0], [x0 - width, y0 + height]])
         return projection

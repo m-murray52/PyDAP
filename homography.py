@@ -42,9 +42,15 @@ class Homography:
     """Performs homographic perspective correction on images such that the reference object (chessboard) and image planes are 
     approximately parallel"""
 
-    def __init__(self, image) -> None:
+    def __init__(self, image, width_calibration, height_calibration) -> None:
         self.img = image
-        self.chess_pattern = detect_chessboard.Chessboard(image)
+        #self.width_calibration = width_calibration
+        #self.height_calibration = height_calibration
+
+        self.square_dimensions = float(input("Enter height/width of square as measured with ruler (mm): "))
+        self.image_square_height = self.square_dimensions/height_calibration
+        self.image_square_width =self.square_dimensions/width_calibration
+        self.chess_pattern = detect_chessboard.Chessboard(image,square_height= self.image_square_height, square_width= self.image_square_width)
         self.points_of_interest = self.chess_pattern.points_of_interest
         self.projection = self.chess_pattern.projection()
 
@@ -66,22 +72,7 @@ class Homography:
 """
 # Alternative, opencv docs method (https://docs.opencv.org/4.x/d9/dab/tutorial_homography.html#tutorial_homography_Demo1): 
 
-color = 'green'
-patches = []
-fig, ax = plt.subplots(1,2, figsize=(15, 10), dpi = 80)
-for coordinates in (points_of_interest + projection):
-    patch = Circle((coordinates[0],coordinates[1]), 10, 
-                    facecolor = color)
-    patches.append(patch)
-for p in patches[:4]:
-    ax[0].add_patch(p)
-ax[0].imshow(img1)
-
-for p in patches[4:]:
-    ax[1].add_patch(p)
-ax[1].imshow(np.ones((img1.shape[0], img1.shape[1])))"""
-
-"""ret1, corners1 = cv2.findChessboardCorners(img1, patternSize)
+ret1, corners1 = cv2.findChessboardCorners(img1, patternSize)
 ret2, corners2 = cv2.findChessboardCorners(img2, patternSize)
 
 H, _ = cv2.findHomography(corners1, corners2)

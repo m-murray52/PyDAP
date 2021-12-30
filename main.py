@@ -12,6 +12,8 @@ import argparse
 import math
 import logging 
 import homography
+from skimage import transform
+from skimage.io import imread, imshow
 
 
 # load video and select frame averaging method
@@ -444,6 +446,9 @@ def calibrate_area(pixel_width, pixel_height):
     # Calibrate contour area
     return C_area
 
+def transform_perspective(frame, transform):
+    tf_img_warp = transform.warp(frame, transform.inverse, mode = 'symmetric')
+
 
 # Find median/mean image
 
@@ -469,8 +474,8 @@ blue, green, red = cv2.split(image)
 homography_img = homography.Homography(image)
 
 # Correct perspective
-corrected_image = homography_img.perspective_transform()
-
+homography_transform = homography_img.perspective_transform()
+corrected_image = transform_perspective(frame, homography_transform)
 
 # Convert the median/mean image to grayscale
 #grey_image = cv2.cvtColor(contrast_enhanced, cv2.COLOR_BGR2GRAY)
