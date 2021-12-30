@@ -330,39 +330,13 @@ def bounding_box(src, mask, correct_mask, area_calibration, width_calibration, h
     x, y, w, h = cv2.boundingRect(approx)
 
 
-    # Repeat for perspective corrected image
-    kernel2 = cv2.getStructuringElement(cv2.MORPH_CROSS , (kernel_size, kernel_size))
-    imgDil2 = cv2.dilate(correct_mask, kernel2, iterations)
-    #closedImg = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-    #cv2.imshow("Closed Image", closedImg)
-    #cv2.waitKey(0)
-    contours2, hierarchy2 = cv2.findContours(imgDil2, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    #contours, hierarchy = cv2.findContours(closedImg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    cnt2 = contours2[0]
+    
 
-    # Count number of non-zero pixels in binary mask
-    non_zero_pixels2 = cv2.countNonZero(correct_mask)
-
-
-    # Create Bounding Box   
-    correct_area = cv2.contourArea(cnt2)
-   
-    correct_area_non_zero_pixels = non_zero_pixels2
-    rect2 = cv2.minAreaRect(cnt2)
-    box2 = cv2.boxPoints(rect2)
-    box2 = np.int0(box2)
-    (x2, y2), (height2, width2), angle2 = rect2
-
-    peri2 = cv2.arcLength(cnt2, True)
-    approx2 = cv2.approxPolyDP(cnt2, 0.02 * peri2, True)
-    print(len(approx))
-    x2, y2, w2, h2 = cv2.boundingRect(approx)
-
-    correct_calibrated_area = correct_area*area_calibration
+    correct_calibrated_area = area*area_calibration
     # had to swap height and width calibration because video is rotated
-    correct_calibrated_width = width2*height_calibration
-    correct_calibrated_height = height2*width_calibration
-    correct_calibrate_area_non_zero = correct_area_non_zero_pixels*area_calibration
+    correct_calibrated_width = width*height_calibration
+    correct_calibrated_height = height*width_calibration
+    correct_calibrate_area_non_zero = non_zero_pixels*area_calibration
 
     #cv2.drawContours(image=image_copy, contours=contours, contourIdx=-1, color=(0, 255, 0), thickness=2, lineType=cv2.LINE_AA)
     #can also use cv2.connectedComponentsWithStats
@@ -372,11 +346,11 @@ def bounding_box(src, mask, correct_mask, area_calibration, width_calibration, h
 
     cv2.drawContours(src,[box],0,(0,255, 0),2)
     cv2.putText(src, "Bounding Box Area: {0:.3g}".format(correct_calibrated_area) + " mm^2", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Bounding Box Area (px): " + str(int(correct_area)) + " px", (20,  80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(src, "Bounding Box Area (px): " + str(int(area)) + " px", (20,  80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     cv2.putText(src, "Bounding Box Height: {0:.3g}".format(correct_calibrated_width) + " mm", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     cv2.putText(src, "Bounding Width: {0:.3g}".format(correct_calibrated_height) + " mm", (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     cv2.putText(src, "Beam Area: {0:.3g}".format(correct_calibrate_area_non_zero) + " mm^2", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Number non-zero pixels: " + str(int(correct_area_non_zero_pixels)) + " px", (20, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(src, "Number non-zero pixels: " + str(int(non_zero_pixels)) + " px", (20, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     cv2.putText(src, "Area Calibration Factor: {0:.3g}".format(area_calibration) + " mm^2/px", (20, 280), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     cv2.putText(src, "Width Calibration Factor: {0:.3g}".format(width_calibration) + " mm/px", (20, 320), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     cv2.putText(src, "Height Calibration Factor: {0:.3g}".format(height_calibration) + " mm/px", (20, 360), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
@@ -479,7 +453,7 @@ corrected_image = transform_perspective(frame, homography_transform)
 
 # Convert the median/mean image to grayscale
 #grey_image = cv2.cvtColor(contrast_enhanced, cv2.COLOR_BGR2GRAY)
-grey_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+grey_image = cv2.cvtColor(corrected_image, cv2.COLOR_BGR2GRAY)
 
 #cv2.imwrite('greyscale_beam.png', grey_image)
 
@@ -495,7 +469,7 @@ def select_roi(image):
 
 
 # select roi
-roi_image, roi = select_roi(image)
+roi_image, roi = select_roi(corrected_image)
 
 def binary_image(image, roi_img, roi, method):
     
@@ -573,7 +547,7 @@ def binary_image(image, roi_img, roi, method):
 correct_perspective_bin = binary_image(corrected_image, roi_image, roi, args.method)
 
 # uncorrected binary, use the same roi
-uncorrected_binary = binary_image(image, roi_image, roi, args.method)
+#uncorrected_binary = binary_image(image, roi_image, roi, args.method)
 
 cv2.imwrite('image_for_bin_mask.png', correct_perspective_bin)
 
@@ -594,7 +568,7 @@ calibration_factor_h = calibrate_height(distance, frame_height)
 calibration_factor_a = calibrate_area(calibration_factor_w, calibration_factor_h)
 
 # Apply contours to cropped_histogram_equalised_product_image to generate bounding box and display area
-masked_frame = bounding_box(src= image, mask= uncorrected_binary, correct_mask= correct_perspective_bin, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h, kernel_size= 3, iterations= 1)
+masked_frame = bounding_box(src= image, mask= correct_perspective_bin, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h, kernel_size= 3, iterations= 1)
 cv2.imwrite('masked_frame_w_bb.png', masked_frame)
 
 #cv2.imshow('Bounding box', masked_frame)
@@ -622,7 +596,7 @@ logging.info('Time of masked image creation from start: {} s'.format(total_time)
 
 # Function to write video
 
-def write_masked_video(frames_list, mask, corrected_mask, area_calibration, width_calibration, height_calibration):
+def write_masked_video(frames_list, mask, area_calibration, width_calibration, height_calibration):
     
 
     # Load Video Stream
@@ -643,7 +617,7 @@ def write_masked_video(frames_list, mask, corrected_mask, area_calibration, widt
             count += 1
 
         # Apply bounding box to frame 
-            masked_frame = bounding_box(src=masked_frame, mask=mask, correct_mask=corrected_mask, area_calibration= area_calibration, width_calibration= width_calibration, height_calibration= height_calibration, kernel_size= 3, iterations=1)
+            masked_frame = bounding_box(src=masked_frame, mask=mask, area_calibration= area_calibration, width_calibration= width_calibration, height_calibration= height_calibration, kernel_size= 3, iterations=1)
             cv2.imshow('masked frame', masked_frame)
             cv2.waitKey(0)
         # Apply contours
@@ -663,7 +637,7 @@ def write_masked_video(frames_list, mask, corrected_mask, area_calibration, widt
     cap.release()
     cv2.destroyAllWindows()
 
-write_masked_video(frames_list= frames, mask= uncorrected_binary, corrected_mask= correct_perspective_bin, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h)
+write_masked_video(frames_list= frames, mask= correct_perspective_bin, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h)
 
 
 logging.info('Area Calibration Factor: {}'.format(calibration_factor_a))

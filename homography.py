@@ -42,15 +42,15 @@ class Homography:
     """Performs homographic perspective correction on images such that the reference object (chessboard) and image planes are 
     approximately parallel"""
 
-    def __init__(self, image, width_calibration, height_calibration) -> None:
-        self.img = image
+    def __init__(self, frame, calibration_image, width_calibration, height_calibration) -> None:
+        self.frame = frame
         #self.width_calibration = width_calibration
         #self.height_calibration = height_calibration
 
         self.square_dimensions = float(input("Enter height/width of square as measured with ruler (mm): "))
         self.image_square_height = self.square_dimensions/height_calibration
         self.image_square_width =self.square_dimensions/width_calibration
-        self.chess_pattern = detect_chessboard.Chessboard(image,square_height= self.image_square_height, square_width= self.image_square_width)
+        self.chess_pattern = detect_chessboard.Chessboard(calibration_image,square_height= self.image_square_height, square_width= self.image_square_width)
         self.points_of_interest = self.chess_pattern.points_of_interest
         self.projection = self.chess_pattern.projection()
 
@@ -59,12 +59,12 @@ class Homography:
         # estimate the homographic transform needed to correct the perspective of the image
         tform = transform.estimate_transform('projective', self.points_of_interest, self.projection)
 
-        # perform perspective correction 
-        tf_img_warp = transform.warp(self.img, tform.inverse, mode = 'symmetric')
+        # perform perspective correction on whatever the current image set is 
+        #tf_img_warp = transform.warp(self.frame, tform.inverse, mode = 'symmetric')
 
-        cv2.imshow('Transformed image', tf_img_warp)
-        cv2.waitKey(0)
-        return tf_img_warp
+        #cv2.imshow('Transformed image', tf_img_warp)
+        #cv2.waitKey(0)
+        return tform
 
 
 
