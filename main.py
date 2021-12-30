@@ -275,9 +275,9 @@ def mask_img(method, gradient, image):
 
 
         # define criteria, number of clusters(K) and apply kmeans()
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 1.0)
         K = 2
-        ret, label, center=cv2.kmeans(kmeans_image, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+        ret, label, center=cv2.kmeans(kmeans_image, K, None, criteria, 30, cv2.KMEANS_RANDOM_CENTERS)
 
         # Now convert back into uint8, and make original image
         center = np.uint8(center)
@@ -565,11 +565,45 @@ def binary_image(image, roi_img, roi, method):
 #mask_image = maskImg(args.method, roi_image)
 correct_perspective_bin = binary_image(corrected_image, roi_image, roi, args.method)
 
+# Apply region growing to binary image
+# First create empty list to store mouse clicks
+
+
+# Function to append mouse clicks to list, for use as seeds
+def on_mouse(event, x, y, flags, params):
+    if event == cv2.EVENT_LBUTTONDOWN:
+        print('Seed: ' + str(x) + ', ' + str(y), correct_perspective_bin[y,x])
+        clicks.append((y,x))
+
+clicks =[]
+
+cv2.namedWindow('Select Seeds')
+cv2.setMouseCallback('Select Seeds', on_mouse, 0, )
+cv2.imshow('Select Seeds', correct_perspective_bin)
+cv2.waitKey()
+
+
+seed = clicks[-1]
+
+
+
+# Binary Seed Growth image
+seed_growth_image = RegionGrow(correct_perspective_bin, seed)
+
+cv2.imwrite('image_after_seed_growth.png', seed_growth_image)
+
+
 # uncorrected binary, use the same roi
 #uncorrected_binary = binary_image(image, roi_image, roi, args.method)
 
 cv2.imwrite('image_for_bin_mask.png', correct_perspective_bin)
 
+# If there are more than one clicks
+"""if len(clicks) > 1:
+    # For each additional click grow the corresponding seed
+    for click in clicks[0:]:
+        region = RegionGrow(correct_perspective_bin, click)
+        seed_growth_image = cv2.add(seed_growth_image, region)"""
 
 # Find frame width and height. Use .shape. For the moment process only one frame
 # We convert the resolutions from float to integer.
@@ -578,7 +612,7 @@ cv2.imwrite('image_for_bin_mask.png', correct_perspective_bin)
 
 
 # Apply contours to cropped_histogram_equalised_product_image to generate bounding box and display area
-masked_frame = bounding_box(src= image, mask= correct_perspective_bin, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h, kernel_size= 3, iterations= 1)
+masked_frame = bounding_box(src= image, mask= seed_growth_image, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h, kernel_size= 3, iterations= 1)
 cv2.imwrite('masked_frame_w_bb.png', masked_frame)
 
 #cv2.imshow('Bounding box', masked_frame)
@@ -647,7 +681,7 @@ def write_masked_video(frames_list, mask, area_calibration, width_calibration, h
     cap.release()
     cv2.destroyAllWindows()
 
-write_masked_video(frames_list= frames, mask= correct_perspective_bin, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h)
+write_masked_video(frames_list= frames, mask= seed_growth_image, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h)
 
 
 logging.info('Area Calibration Factor: {}'.format(calibration_factor_a))

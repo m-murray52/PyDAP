@@ -55,32 +55,28 @@ class RegionGrow:
     
     #clicks = []
     
-    def __init__(self) -> None:
-        pass
-
-
-    def region_grower(img, seed) -> tuple:
-        seed_points = []
-        outimg = np.zeros_like(img)
-        seed_points.append((seed[0], seed[1]))
-        processed = []
-        while(len(seed_points) > 0):
-            pix = seed_points[0]
-            outimg[pix[0], pix[1]] = 255
-            for coord in get8n(pix[0], pix[1], img.shape):
-                if img[coord[0], coord[1]] != 0:
-                    outimg[coord[0], coord[1]] = 255
-                    if not coord in processed:
-                        seed_points.append(coord)
-                    processed.append(coord)
-            seed_points.pop(0)
+    def __init__(self, img, seed) -> np.ndarray:
+        self.seed_points = []
         
-        return outimg
+        self.outimg = np.zeros_like(img)
+        self.seed_points.append((seed[0], seed[1]))
+        self.processed = []
+        while(len(self.seed_points) > 0):
+            self.pix = self.seed_points[0]
+            self.outimg[self.pix[0], self.pix[1]] = 255
+            for coord in get8n(self.pix[0], self.pix[1], img.shape):
+                if img[coord[0], coord[1]] != 0:
+                    self.outimg[coord[0], coord[1]] = 255
+                    if not coord in self.processed:
+                        self.seed_points.append(coord)
+                    self.processed.append(coord)
+            self.seed_points.pop(0)
+        return self.outimg
 
-    #def on_mouse(self, event, x, y, flags, params):
-    #    if event == cv2.EVENT_LBUTTONDOWN:
-    #        print('Seed: ' + str(x) + ', ' + str(y), self.img[y,x])
-    #        self.clicks.append((y,x))
+    def on_mouse(self, event, x, y, flags, params):
+        if event == cv2.EVENT_LBUTTONDOWN:
+            print('Seed: ' + str(x) + ', ' + str(y), self.img[y,x])
+            self.clicks.append((y,x))
 
     #cv2.namedWindow('Input')
     #cv2.setMouseCallback('Input', on_mouse, 0, )
@@ -89,6 +85,7 @@ class RegionGrow:
     #seed = clicks[-1]
     #out = region_grower(img, seed)
     #cv2.imshow('Region Growing', out)
+#print(RegionGrow.__dict__)
 
 class Bag:
     def __init__(self):
