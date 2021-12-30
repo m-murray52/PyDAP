@@ -7,7 +7,7 @@ exposed phosphor scintillation material
 import cv2 
 import numpy as np 
 
-#from region_growing import RegionGrow
+from region_growing import RegionGrow
 import argparse
 import math
 import logging 
@@ -437,7 +437,8 @@ else:
 #image = cv2.imread('median.jpg')
 #image = cv2.imread('mean.jpg')
     image = np.uint8(frame)
-    calibration_img = image
+    calibration_img = cv2.imread('chessboard.jpg')
+    calibration_img = np.uint8(calibration_img)
 
 
 
@@ -627,8 +628,8 @@ def write_masked_video(frames_list, mask, area_calibration, width_calibration, h
 
         # Apply bounding box to frame 
             masked_frame = bounding_box(src=masked_frame, mask=mask, area_calibration= area_calibration, width_calibration= width_calibration, height_calibration= height_calibration, kernel_size= 3, iterations=1)
-            cv2.imshow('masked frame', masked_frame)
-            cv2.waitKey(0)
+            #cv2.imshow('masked frame', masked_frame)
+            #cv2.waitKey(0)
         # Apply contours
             #masked_frame = fitcontours(masked_frame, mask)
 
