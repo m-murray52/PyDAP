@@ -8,12 +8,14 @@ from skimage.io import imread, imshow
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Circle
+import logging 
 
-"""# Load image
-img1 = cv2.imread('/home/michael/Pictures/Screenshot_20211219_013904.png')
+"""logging.basicConfig(filename= 'test_homography.log', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
+# Load image
+img1 = cv2.imread('chessboard.jpg')
 
 # detect chessboard pattern
-chess_pattern = detect_chessboard.Chessboard('/home/michael/Pictures/Screenshot_20211219_013904.png')
+chess_pattern = detect_chessboard.Chessboard(img1, 10.0, 10.0)
 
 # extract points of interest, i.e., the corners of the chessboard pattern
 points_of_interest = chess_pattern.points_of_interest
@@ -28,6 +30,10 @@ print(type(projection))
 print(shape(points_of_interest))
 print(shape(projection))
 
+logging.info('Points of Interest: {}'.format(points_of_interest))
+logging.info('Projection: {}'.format(projection))
+
+
 # estimate the homographic transform needed to correct the perspective of the image
 tform = transform.estimate_transform('projective', points_of_interest, projection)
 
@@ -35,7 +41,8 @@ tform = transform.estimate_transform('projective', points_of_interest, projectio
 tf_img_warp = transform.warp(img1, tform.inverse, mode = 'symmetric')
 
 # Display image
-cv2.imshow('img', tf_img_warp)
+cv2.imshow('warped img', tf_img_warp)
+cv2.imshow('unwarped img', img1)
 cv2.waitKey()"""
 
 class Homography:
@@ -66,7 +73,8 @@ class Homography:
         #cv2.waitKey(0)
         return tform
 
-
+print(chess_pattern.corners2)
+print(shape(chess_pattern.corners2))
 
 
 """

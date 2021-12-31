@@ -587,10 +587,13 @@ seed = clicks[-1]
 
 
 
-# Binary Seed Growth image
+# Pass image to seed growing
 seed_growth_image = RegionGrow(correct_perspective_bin, seed)
 
-cv2.imwrite('image_after_seed_growth.png', seed_growth_image)
+# Seed grown image
+seed_grown_image = seed_growth_image.grow_seeds() 
+
+cv2.imwrite('image_after_seed_growth.png', seed_grown_image)
 
 
 # uncorrected binary, use the same roi
@@ -612,7 +615,7 @@ cv2.imwrite('image_for_bin_mask.png', correct_perspective_bin)
 
 
 # Apply contours to cropped_histogram_equalised_product_image to generate bounding box and display area
-masked_frame = bounding_box(src= image, mask= seed_growth_image, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h, kernel_size= 3, iterations= 1)
+masked_frame = bounding_box(src= image, mask= seed_grown_image, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h, kernel_size= 3, iterations= 1)
 cv2.imwrite('masked_frame_w_bb.png', masked_frame)
 
 #cv2.imshow('Bounding box', masked_frame)
@@ -681,7 +684,7 @@ def write_masked_video(frames_list, mask, area_calibration, width_calibration, h
     cap.release()
     cv2.destroyAllWindows()
 
-write_masked_video(frames_list= frames, mask= seed_growth_image, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h)
+write_masked_video(frames_list= frames, mask= seed_grown_image, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h)
 
 
 logging.info('Area Calibration Factor: {}'.format(calibration_factor_a))
