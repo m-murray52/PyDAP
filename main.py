@@ -420,9 +420,7 @@ def calibrate_area(pixel_width, pixel_height):
     # Calibrate contour area
     return C_area
 
-def transform_perspective(frame, homography_transform):
-    transformed_img = transform.warp(frame, homography_transform.inverse, mode = 'symmetric')
-    return (transformed_img*255).astype(np.uint8)
+
 
 
 # Find median/mean image
@@ -437,6 +435,8 @@ else:
 #image = cv2.imread('median.jpg')
 #image = cv2.imread('mean.jpg')
     image = np.uint8(frame)
+    cv2.imshow('image', image)
+    cv2.waitKey(0)
     calibration_img = cv2.imread('chessboard.jpg')
     calibration_img = np.uint8(calibration_img)
 
@@ -461,6 +461,11 @@ pixel_height = calibrate_homography_img.pixel_height()
 # pixel area 
 pixel_area = pixel_height*pixel_width
 
+def transform_perspective(frame, homography_transform):
+    transformed_img = transform.warp(frame, homography_transform.inverse, mode = 'symmetric')
+    #return transformed_img.astype(np.uint8)*255
+    return transformed_img
+
 # Correct perspective of image 
 homography_transform = calibrate_homography_img.perspective_transform()
 corrected_image = transform_perspective(frame, homography_transform)
@@ -468,6 +473,7 @@ corrected_image = transform_perspective(frame, homography_transform)
 # Convert to uint8
 #corrected_image = np.uint8(corrected_image)
 #corrected_image = corrected_image.astype('uint8')*255
+cv2.imshow('frame', frame)
 cv2.imshow('corrected image', corrected_image)
 cv2.waitKey(0)
 

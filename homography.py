@@ -54,7 +54,8 @@ class Homography:
         #self.width_calibration = width_calibration
         #self.height_calibration = height_calibration
 
-        self.square_dimensions = float(input("Enter height/width of square as measured with ruler (mm): "))
+        #self.square_dimensions = float(input("Enter height/width of square as measured with ruler (mm): "))
+        self.square_dimensions = float(10)
         # dimensions in units of pixel
         self.width_pixels = width_pixels
         self.height_pixels = height_pixels
