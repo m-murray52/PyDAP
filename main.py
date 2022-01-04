@@ -25,7 +25,7 @@ parser.add_argument("--method", type=str, required= True, help="select colour fi
 parser.add_argument("--gradient", type=str, required= False, help="type 'yes' to use edge enhanced threshold, for use with grey method")
 
 parser.add_argument("--output", type=str, required=False, help='enter the name of the output video including format (.mp4 or .avi)')
-parser.add_argument("--distance", type=float, required=True, help='Enter the distance from the camera to the phosphor sheet in mm')
+parser.add_argument("--distance", type=float, required=False, help='Enter the distance from the camera to the phosphor sheet in mm')
 args = parser.parse_args()
 
 start_time = cv2.getTickCount()
@@ -82,10 +82,10 @@ while ret:
 frames = np.stack(frames, axis=0)
 
 # Ask user to provide approximate distance from phosphor to camera in mm
-distance = args.distance
+#distance = args.distance
 
 # Convert distance from string to float
-distance = float(distance)
+#distance = float(distance)
 
 
 # Define function to find median or mean image
