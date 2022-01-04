@@ -69,7 +69,7 @@ class Chessboard:
         y0 = self.points_of_interest[0][1]
 
 
-        #print(self.points_of_interest)
+        #print(self.points_of_interet tst)
 
         # Target projection 
         # height is multiplied by 7 because 7 squares are being used, since a n 8x6 chessboard is being detected.

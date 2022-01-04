@@ -49,15 +49,16 @@ class Homography:
     """Performs homographic perspective correction on images such that the reference object (chessboard) and image planes are 
     approximately parallel"""
 
-    def __init__(self, frame, calibration_image, width_calibration, height_calibration) -> None:
+    def __init__(self, frame, calibration_image, width_pixels=100, height_pixels=100) -> None:
         self.frame = frame
         #self.width_calibration = width_calibration
         #self.height_calibration = height_calibration
 
         self.square_dimensions = float(input("Enter height/width of square as measured with ruler (mm): "))
-        self.image_square_height = self.square_dimensions/height_calibration
-        self.image_square_width =self.square_dimensions/width_calibration
-        self.chess_pattern = detect_chessboard.Chessboard(calibration_image,square_height= self.image_square_height, square_width= self.image_square_width)
+        # dimensions in units of pixel
+        self.width_pixels = width_pixels
+        self.height_pixels = height_pixels
+        self.chess_pattern = detect_chessboard.Chessboard(calibration_image,square_height= self.width_pixels, square_width= self.height_pixels)
         self.points_of_interest = self.chess_pattern.points_of_interest
         self.projection = self.chess_pattern.projection()
 
@@ -73,8 +74,19 @@ class Homography:
         #cv2.waitKey(0)
         return tform
 
-print(chess_pattern.corners2)
-print(shape(chess_pattern.corners2))
+    def pixel_width(self):
+        return self.square_dimensions/self.width_pixels
+
+    def pixel_height(self):
+        return self.square_dimensions/self.height_pixels
+
+    
+    
+
+
+
+#print(chess_pattern.corners2)
+#print(shape(chess_pattern.corners2))
 
 
 """

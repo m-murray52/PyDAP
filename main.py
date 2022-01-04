@@ -447,21 +447,22 @@ blue, green, red = cv2.split(image)
 
 # Calibrate dimensions based on perspective corrected image
 
-# Calibrated width 
-calibration_factor_w = calibrate_width(distance, frame_width)
-
-# Calibrated height
-calibration_factor_h = calibrate_height(distance, frame_height)
-
-# Calibration factor for area
-calibration_factor_a = calibrate_area(calibration_factor_w, calibration_factor_h)
 
 'Processing to determine area:'
 # define homography of image with chessboard pattern
-homography_img = homography.Homography(image, calibration_image=calibration_img, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h)
+calibrate_homography_img = homography.Homography(image, calibration_image=calibration_img)
 
-# Correct perspective
-homography_transform = homography_img.perspective_transform()
+# pixel width 
+pixel_width = calibrate_homography_img.pixel_width()
+
+# pixel height
+pixel_height = calibrate_homography_img.pixel_height()
+
+# pixel area 
+pixel_area = pixel_height*pixel_width
+
+# Correct perspective of image 
+homography_transform = calibrate_homography_img.perspective_transform()
 corrected_image = transform_perspective(frame, homography_transform)
 
 # Convert to uint8
@@ -615,7 +616,7 @@ cv2.imwrite('image_for_bin_mask.png', correct_perspective_bin)
 
 
 # Apply contours to cropped_histogram_equalised_product_image to generate bounding box and display area
-masked_frame = bounding_box(src= image, mask= seed_grown_image, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h, kernel_size= 3, iterations= 1)
+masked_frame = bounding_box(src= image, mask= seed_grown_image, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height, kernel_size= 3, iterations= 1)
 cv2.imwrite('masked_frame_w_bb.png', masked_frame)
 
 #cv2.imshow('Bounding box', masked_frame)
@@ -684,12 +685,12 @@ def write_masked_video(frames_list, mask, area_calibration, width_calibration, h
     cap.release()
     cv2.destroyAllWindows()
 
-write_masked_video(frames_list= frames, mask= seed_grown_image, area_calibration= calibration_factor_a, width_calibration= calibration_factor_w, height_calibration= calibration_factor_h)
+write_masked_video(frames_list= frames, mask= seed_grown_image, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height)
 
 
-logging.info('Area Calibration Factor: {}'.format(calibration_factor_a))
-logging.info('Width Calibration Factor: {}'.format(calibration_factor_w))
-logging.info('Height Calibration Factor: {}'.format(calibration_factor_h))
+logging.info('Area Calibration Factor: {}'.format(pixel_area))
+logging.info('Width Calibration Factor: {}'.format(pixel_width))
+logging.info('Height Calibration Factor: {}'.format(pixel_height))
 logging.info('Frame Width: {}'.format(frame_width))
 logging.info('Frame Height: {}'.format(frame_height))
 
