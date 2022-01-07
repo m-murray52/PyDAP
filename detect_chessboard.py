@@ -58,28 +58,30 @@ class Chessboard:
         cv2.waitKey()
         print(self.corners2)
 
+        self.x0 = self.points_of_interest[0][0] 
+        self.x1 = self.points_of_interest[1][0] 
+        self.y0 = self.points_of_interest[0][1]
+
+        # width
+        self.w = self.x1 - self.x0 
+
+        # height
+        self.h = self.w
+
     def projection(self) -> np.ndarray:
         
         # Find width of top left detected square, use this as square dimensions
 
         # create projection, e.g. (h, w) = (85, 85)
         # Co-ordinates of top right corner (will change later to top left)
-        x0 = self.points_of_interest[0][0] 
-        x1 = self.points_of_interest[1][0] 
-        y0 = self.points_of_interest[0][1]
-
-        # width
-        w = x1 - x0 
-
-        # height
-        h = w
+        
 
         #print(self.points_of_interet tst)
 
         # Target projection 
         # height is multiplied by 7 because 7 squares are being used, since a n 8x6 chessboard is being detected.
         # Likewise for width with 5 squares. 
-        projection = np.array([[x0, y0], [x0, y0 - 8*h], [x0 + 5*w, y0], [x0 + 5*w, y0 - 8*h]])
+        projection = np.array([[self.x0, self.y0], [self.x0, self.y0 - 8*self.h], [self.x0 + 5*self.w, self.y0], [self.x0 + 5*self.w, self.y0 - 8*self.h]])
         #projection = np.array([[x0, y0], [x0, y0 + height], [x0 - width, y0], [x0 - width, y0 + height]])
         return projection
 

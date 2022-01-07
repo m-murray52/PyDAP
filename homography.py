@@ -49,16 +49,15 @@ class Homography:
     """Performs homographic perspective correction on images such that the reference object (chessboard) and image planes are 
     approximately parallel"""
 
-    def __init__(self, frame, calibration_image, width_pixels=100, height_pixels=100) -> None:
+    def __init__(self, frame, calibration_image) -> None:
         self.frame = frame
         #self.width_calibration = width_calibration
         #self.height_calibration = height_calibration
 
-        #self.square_dimensions = float(input("Enter height/width of square as measured with ruler (mm): "))
-        self.square_dimensions = float(10)
+        self.square_dimensions = float(input("Enter height/width of square as measured with ruler (mm): "))
+        
         # dimensions in units of pixel
-        self.width_pixels = width_pixels
-        self.height_pixels = height_pixels
+        
         self.chess_pattern = detect_chessboard.Chessboard(calibration_image)
         self.points_of_interest = self.chess_pattern.points_of_interest
         self.projection = self.chess_pattern.projection()
@@ -66,20 +65,22 @@ class Homography:
 
     def perspective_transform(self):
         # estimate the homographic transform needed to correct the perspective of the image
-        tform = transform.estimate_transform('projective', self.points_of_interest, self.projection)
+        #tform = transform.estimate_transform('projective', self.points_of_interest, self.projection)
 
+        M = cv2.getPerspectiveTransform(self.points_of_interest, self.projection)
         # perform perspective correction on whatever the current image set is 
         #tf_img_warp = transform.warp(self.frame, tform.inverse, mode = 'symmetric')
 
         #cv2.imshow('Transformed image', tf_img_warp)
         #cv2.waitKey(0)
-        return tform
+        return M
+        
 
     def pixel_width(self):
-        return self.square_dimensions/self.width_pixels
+        return self.square_dimensions/self.chess_pattern.w
 
     def pixel_height(self):
-        return self.square_dimensions/self.height_pixels
+        return self.square_dimensions/self.chess_pattern.h
 
     
     
