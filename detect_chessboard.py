@@ -60,8 +60,8 @@ class Chessboard:
 
     def projection(self) -> np.ndarray:
         
-        height = self.height/(0.117)
-        width = self.width/(0.121)
+        height = self.height/0.12
+        width = self.width/0.12
 
         # create projection, e.g. (h, w) = (85, 85)
         # Co-ordinates of top right corner (will change later to top left)
@@ -77,6 +77,12 @@ class Chessboard:
         projection = np.array([[x0, y0], [x0, y0 - 8*height], [x0 + 5*width, y0], [x0 + 5*width, y0 - 8*height]])
         #projection = np.array([[x0, y0], [x0, y0 + height], [x0 - width, y0], [x0 - width, y0 + height]])
         return projection
+
+    def height_chess(self):
+        return 8*self.height/0.12
+
+    def width_chess(self):
+        return 5*self.width/0.12
 
 #chess_img = Chessboard(args.image)
 #print(chess_img.projection())

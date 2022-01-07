@@ -461,10 +461,14 @@ pixel_height = calibrate_homography_img.pixel_height()
 # pixel area 
 pixel_area = pixel_height*pixel_width
 
-def transform_perspective(frame, homography_transform):
-    transformed_img = transform.warp(frame, homography_transform.inverse, mode = 'symmetric')
-    #return transformed_img.astype(np.uint8)*255
-    return transformed_img
+#def transform_perspective(frame, homography_transform):
+#    transformed_img = transform.warp(frame, homography_transform.inverse, mode = 'symmetric')
+#    return (transformed_img*255).astype(np.uint8)
+    #return transformed_img
+
+def transform_perspective(frame, homography_transform, image_height=frame_height, image_width=frame_width):
+    dst = cv2.warpPerspective(frame,homography_transform,(image_width,image_height))
+    return dst
 
 # Correct perspective of image 
 homography_transform = calibrate_homography_img.perspective_transform()
