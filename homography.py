@@ -59,7 +59,7 @@ class Homography:
         # dimensions in units of pixel
         self.width_pixels = width_pixels
         self.height_pixels = height_pixels
-        self.chess_pattern = detect_chessboard.Chessboard(calibration_image,square_height= self.width_pixels, square_width= self.height_pixels)
+        self.chess_pattern = detect_chessboard.Chessboard(calibration_image)
         self.points_of_interest = self.chess_pattern.points_of_interest
         self.projection = self.chess_pattern.projection()
 

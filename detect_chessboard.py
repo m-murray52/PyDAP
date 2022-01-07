@@ -17,14 +17,14 @@ class Chessboard:
     """
     
 
-    def __init__(self, img, square_height, square_width, objpoints = [], imgpoints=[]) -> None:
+    def __init__(self, img, objpoints = [], imgpoints=[]) -> None:
        
         # termination criteria
         self.criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
         # Define height and width of chessboard squares
-        self.height = square_height
-        self.width = square_width
+        #self.height = square_height
+        #self.width = square_width
 
     # prepare object points, like (0,0,0), (1,0,0), (2,0,0) ....,(6,5,0)
         self.objp = np.zeros((6*7,3), np.float32)
@@ -60,21 +60,26 @@ class Chessboard:
 
     def projection(self) -> np.ndarray:
         
-        height = self.height/(0.117)
-        width = self.width/(0.121)
+        # Find width of top left detected square, use this as square dimensions
 
         # create projection, e.g. (h, w) = (85, 85)
         # Co-ordinates of top right corner (will change later to top left)
         x0 = self.points_of_interest[0][0] 
+        x1 = self.points_of_interest[1][0] 
         y0 = self.points_of_interest[0][1]
 
+        # width
+        w = x1 - x0 
+
+        # height
+        h = w
 
         #print(self.points_of_interet tst)
 
         # Target projection 
         # height is multiplied by 7 because 7 squares are being used, since a n 8x6 chessboard is being detected.
         # Likewise for width with 5 squares. 
-        projection = np.array([[x0, y0], [x0, y0 - 8*height], [x0 + 5*width, y0], [x0 + 5*width, y0 - 8*height]])
+        projection = np.array([[x0, y0], [x0, y0 - 8*h], [x0 + 5*w, y0], [x0 + 5*w, y0 - 8*h]])
         #projection = np.array([[x0, y0], [x0, y0 + height], [x0 - width, y0], [x0 - width, y0 + height]])
         return projection
 
