@@ -334,8 +334,8 @@ def bounding_box(src, mask, area_calibration, width_calibration, height_calibrat
 
     correct_calibrated_area = area*area_calibration
     # had to swap height and width calibration because video is rotated
-    correct_calibrated_width = width*height_calibration
-    correct_calibrated_height = height*width_calibration
+    correct_calibrated_width = width*width_calibration
+    correct_calibrated_height = height*height_calibration
     correct_calibrate_area_non_zero = non_zero_pixels*area_calibration
 
     #cv2.drawContours(image=image_copy, contours=contours, contourIdx=-1, color=(0, 255, 0), thickness=2, lineType=cv2.LINE_AA)
@@ -421,7 +421,10 @@ def calibrate_area(pixel_width, pixel_height):
     return C_area
 
 
+def distance_from_camera(focal_length, img_ref_obj_sensor, width_ref_obj):
 
+    distance = (width_ref_obj*focal_length)/img_ref_obj_sensor
+    return distance
 
 # Find median/mean image
 
@@ -452,7 +455,7 @@ blue, green, red = cv2.split(image)
 # define homography of image with chessboard pattern
 calibrate_homography_img = homography.Homography(image, calibration_image=calibration_img)
 
-# pixel width 
+# pixel width  (mm/pix)
 pixel_width = calibrate_homography_img.pixel_width()
 
 # pixel height
@@ -460,6 +463,21 @@ pixel_height = calibrate_homography_img.pixel_height()
 
 # pixel area 
 pixel_area = pixel_height*pixel_width
+
+# Width chessboard square in pixels
+square_width_pix = calibrate_homography_img.num_pix_chess_square
+
+# Width chessboard square in mm
+square_width_mm = calibrate_homography_img.square_dimensions
+
+# Width of sensor pixel (mm)
+sensor_pixel_width = 0.0014
+
+# Size of chessboard projection on sensor (mm)
+square_with_on_sensor = sensor_pixel_width*square_width_pix
+
+# Distance from ref obj to camera
+distance_to_ref_obj = distance_from_camera(3.6, square_with_on_sensor, square_width_mm)
 
 def transform_perspective(frame, homography_transform, image_height=frame_height, image_width=frame_width):
     dst = cv2.warpPerspective(frame,homography_transform,(image_width,image_height))
@@ -698,8 +716,7 @@ logging.info('Width Calibration Factor: {}'.format(pixel_width))
 logging.info('Height Calibration Factor: {}'.format(pixel_height))
 logging.info('Frame Width: {}'.format(frame_width))
 logging.info('Frame Height: {}'.format(frame_height))
-
-
+logging.info('Distance to transformed plane: {}'.format(distance_to_ref_obj))
 
 
 

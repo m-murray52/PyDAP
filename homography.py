@@ -59,9 +59,11 @@ class Homography:
         # dimensions in units of pixel
         
         self.chess_pattern = detect_chessboard.Chessboard(calibration_image)
-        self.points_of_interest = self.chess_pattern.points_of_interest
-        self.projection = self.chess_pattern.projection()
+        self.points_of_interest = np.float32(self.chess_pattern.points_of_interest)
+        self.projection = np.float32(self.chess_pattern.projection())
 
+        # dimensions chessboard square
+        self.num_pix_chess_square = self.chess_pattern.dimension_pix
 
     def perspective_transform(self):
         # estimate the homographic transform needed to correct the perspective of the image
@@ -77,10 +79,10 @@ class Homography:
         
 
     def pixel_width(self):
-        return self.square_dimensions/self.chess_pattern.w
+        return self.square_dimensions/self.chess_pattern.dimension_pix
 
     def pixel_height(self):
-        return self.square_dimensions/self.chess_pattern.h
+        return self.square_dimensions/self.chess_pattern.dimension_pix
 
     
     
