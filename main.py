@@ -474,10 +474,10 @@ square_width_mm = calibrate_homography_img.square_dimensions
 sensor_pixel_width = 0.0014
 
 # Size of chessboard projection on sensor (mm)
-square_with_on_sensor = sensor_pixel_width*square_width_pix
+square_width_on_sensor = sensor_pixel_width*square_width_pix
 
 # Distance from ref obj to camera
-distance_to_ref_obj = distance_from_camera(3.6, square_with_on_sensor, square_width_mm)
+distance_to_ref_obj = distance_from_camera(3.6, square_width_on_sensor, square_width_mm)
 
 def transform_perspective(frame, homography_transform, image_height=frame_height, image_width=frame_width):
     dst = cv2.warpPerspective(frame,homography_transform,(image_width,image_height))
@@ -626,11 +626,11 @@ cv2.imwrite('image_after_seed_growth.png', seed_grown_image)
 cv2.imwrite('image_for_bin_mask.png', correct_perspective_bin)
 
 # If there are more than one clicks
-"""if len(clicks) > 1:
+if len(clicks) > 1:
     # For each additional click grow the corresponding seed
     for click in clicks[0:]:
         region = RegionGrow(correct_perspective_bin, click)
-        seed_growth_image = cv2.add(seed_growth_image, region)"""
+        seed_growth_image = cv2.add(seed_growth_image, region)
 
 # Find frame width and height. Use .shape. For the moment process only one frame
 # We convert the resolutions from float to integer.
@@ -713,6 +713,8 @@ write_masked_video(frames_list= frames, mask= seed_grown_image, area_calibration
 
 logging.info('Area Calibration Factor: {}'.format(pixel_area))
 logging.info('Width Calibration Factor: {}'.format(pixel_width))
+logging.info('Square width: {}'.format(square_width_pix))
+logging.info('Square width (mm): {}'.format(square_width_mm))
 logging.info('Height Calibration Factor: {}'.format(pixel_height))
 logging.info('Frame Width: {}'.format(frame_width))
 logging.info('Frame Height: {}'.format(frame_height))
