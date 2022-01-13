@@ -58,12 +58,12 @@ class Chessboard:
         #cv2.waitKey()
         print(self.corners2)
 
-        self.x0 = self.corners2[0][0][0]
-        self.x1 = self.corners2[9][0][0]
-        self.y0 = self.corners2[0][0][1]
-        self.y1 = self.corners2[9][0][1]
-        self.a = self.corners2[0][0]
-        self.b = self.corners2[9][0]
+        self.x0 = self.corners2[8][0][0]
+        self.x1 = self.corners2[17][0][0]
+        self.y0 = self.corners2[8][0][1]
+        self.y1 = self.corners2[17][0][1]
+        self.a = self.corners2[8][0]
+        self.b = self.corners2[17][0]
 
         # width
         self.w = self.x1 - self.x0 
