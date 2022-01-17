@@ -297,7 +297,8 @@ def mask_img(method, gradient, image):
 
 
 # Create bounding box function
-def bounding_box(src, mask, area_calibration, width_calibration, height_calibration, kernel_size, iterations = 1):
+def bounding_box(src, mask, perspective_transform, area_calibration, width_calibration, height_calibration, kernel_size, iterations = 1, image_height=frame_height, image_width=frame_width):
+
 
     # Square shaped Structuring Element
     #kernel = np.ones((kernel_size, kernel_size))
@@ -311,9 +312,11 @@ def bounding_box(src, mask, area_calibration, width_calibration, height_calibrat
     #contours, hierarchy = cv2.findContours(closedImg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     cnt = contours[0]
 
+    # Correct video frame perspective 
+    corrected_src = cv2.warpPerspective(src, perspective_transform,(image_width,image_height))
+   
     # Count number of non-zero pixels in binary mask
     non_zero_pixels = cv2.countNonZero(mask)
-
 
     # Create Bounding Box   
     area = cv2.contourArea(cnt)
@@ -336,7 +339,7 @@ def bounding_box(src, mask, area_calibration, width_calibration, height_calibrat
     # had to swap height and width calibration because video is rotated
     correct_calibrated_width = width*width_calibration
     correct_calibrated_height = height*height_calibration
-    correct_calibrate_area_non_zero = non_zero_pixels*area_calibration
+    #correct_calibrate_area_non_zero = non_zero_pixels*area_calibration
 
     #cv2.drawContours(image=image_copy, contours=contours, contourIdx=-1, color=(0, 255, 0), thickness=2, lineType=cv2.LINE_AA)
     #can also use cv2.connectedComponentsWithStats
@@ -344,20 +347,20 @@ def bounding_box(src, mask, area_calibration, width_calibration, height_calibrat
 
     #logging.info('Time until seed selection window since threshold selection: {} s'.format(time_until_region_growing))
 
-    cv2.drawContours(src,[box],0,(0,255, 0),2)
-    cv2.putText(src, "Bounding Box Area: {0:.3g}".format(correct_calibrated_area) + " mm^2", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Bounding Box Area (px): " + str(int(area)) + " px", (20,  80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Bounding Box Height: {0:.3g}".format(correct_calibrated_width) + " mm", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Bounding Width: {0:.3g}".format(correct_calibrated_height) + " mm", (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Beam Area: {0:.3g}".format(correct_calibrate_area_non_zero) + " mm^2", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Number non-zero pixels: " + str(int(non_zero_pixels)) + " px", (20, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Area Calibration Factor: {0:.3g}".format(area_calibration) + " mm^2/px", (20, 280), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Width Calibration Factor: {0:.3g}".format(width_calibration) + " mm/px", (20, 320), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(src, "Height Calibration Factor: {0:.3g}".format(height_calibration) + " mm/px", (20, 360), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.drawContours(corrected_src,[box],0,(0,255, 0),2)
+    cv2.putText(corrected_src, "Bounding Box Area: {0:.3g}".format(correct_calibrated_area) + " mm^2", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    #cv2.putText(corrected_src, "Bounding Box Area (px): " + str(int(area)) + " px", (20,  80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(corrected_src, "Bounding Box Height: {0:.3g}".format(correct_calibrated_width) + " mm", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(corrected_src, "Bounding Width: {0:.3g}".format(correct_calibrated_height) + " mm", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    #cv2.putText(corrected_src, "Beam Area: {0:.3g}".format(correct_calibrate_area_non_zero) + " mm^2", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    #cv2.putText(corrected_src, "Number non-zero pixels: " + str(int(non_zero_pixels)) + " px", (20, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    #cv2.putText(corrected_src, "Area Calibration Factor: {0:.3g}".format(area_calibration) + " mm^2/px", (20, 280), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    #cv2.putText(corrected_src, "Width Calibration Factor: {0:.3g}".format(width_calibration) + " mm/px", (20, 320), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    #cv2.putText(corrected_src, "Height Calibration Factor: {0:.3g}".format(height_calibration) + " mm/px", (20, 360), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
     
     
-    return src
+    return corrected_src
 
 
 def calibrate_height(distance, frame_height=1080):
@@ -434,7 +437,7 @@ if args.average == 'median' or args.average == 'mean':
     image = np.uint8(image)
 
 else:
-    frame = cv2.imread('frame128.jpg')
+    frame = cv2.imread('frame220.jpg')
 #image = cv2.imread('median.jpg')
 #image = cv2.imread('mean.jpg')
     image = np.uint8(frame)
@@ -589,48 +592,7 @@ def binary_image(image, roi_img, roi, method):
 #mask_image = maskImg(args.method, roi_image)
 correct_perspective_bin = binary_image(corrected_image, roi_image, roi, args.method)
 
-# Apply region growing to binary image
-# First create empty list to store mouse clicks
 
-
-# Function to append mouse clicks to list, for use as seeds
-def on_mouse(event, x, y, flags, params):
-    if event == cv2.EVENT_LBUTTONDOWN:
-        print('Seed: ' + str(x) + ', ' + str(y), correct_perspective_bin[y,x])
-        clicks.append((y,x))
-
-clicks =[]
-
-cv2.namedWindow('Select Seeds')
-cv2.setMouseCallback('Select Seeds', on_mouse, 0, )
-cv2.imshow('Select Seeds', correct_perspective_bin)
-cv2.waitKey()
-
-
-seed = clicks[-1]
-
-
-
-# Pass image to seed growing
-seed_growth_image = RegionGrow(correct_perspective_bin, seed)
-
-# Seed grown image
-seed_grown_image = seed_growth_image.grow_seeds() 
-
-cv2.imwrite('image_after_seed_growth.png', seed_grown_image)
-
-
-# uncorrected binary, use the same roi
-#uncorrected_binary = binary_image(image, roi_image, roi, args.method)
-
-cv2.imwrite('image_for_bin_mask.png', correct_perspective_bin)
-
-# If there are more than one clicks
-if len(clicks) > 1:
-    # For each additional click grow the corresponding seed
-    for click in clicks[0:]:
-        region = RegionGrow(correct_perspective_bin, click)
-        seed_growth_image = cv2.add(seed_growth_image, region)
 
 # Find frame width and height. Use .shape. For the moment process only one frame
 # We convert the resolutions from float to integer.
@@ -639,7 +601,7 @@ if len(clicks) > 1:
 
 
 # Apply contours to cropped_histogram_equalised_product_image to generate bounding box and display area
-masked_frame = bounding_box(src= image, mask= seed_grown_image, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height, kernel_size= 3, iterations= 1)
+masked_frame = bounding_box(src= image, perspective_transform=homography_transform, mask= correct_perspective_bin, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height, kernel_size= 3, iterations= 1)
 cv2.imwrite('masked_frame_w_bb.png', masked_frame)
 
 #cv2.imshow('Bounding box', masked_frame)
@@ -688,7 +650,7 @@ def write_masked_video(frames_list, mask, area_calibration, width_calibration, h
             count += 1
 
         # Apply bounding box to frame 
-            masked_frame = bounding_box(src=masked_frame, mask=mask, area_calibration= area_calibration, width_calibration= width_calibration, height_calibration= height_calibration, kernel_size= 3, iterations=1)
+            masked_frame = bounding_box(src=masked_frame, perspective_transform= homography_transform, mask=mask, area_calibration= area_calibration, width_calibration= width_calibration, height_calibration= height_calibration, kernel_size= 3, iterations=1)
             #cv2.imshow('masked frame', masked_frame)
             #cv2.waitKey(0)
         # Apply contours
@@ -708,7 +670,7 @@ def write_masked_video(frames_list, mask, area_calibration, width_calibration, h
     cap.release()
     cv2.destroyAllWindows()
 
-write_masked_video(frames_list= frames, mask= seed_grown_image, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height)
+write_masked_video(frames_list= frames, mask= correct_perspective_bin, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height)
 
 
 logging.info('Area Calibration Factor: {}'.format(pixel_area))
