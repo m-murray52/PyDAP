@@ -437,7 +437,7 @@ if args.average == 'median' or args.average == 'mean':
     image = np.uint8(image)
 
 else:
-    frame = cv2.imread('frame220.jpg')
+    frame = cv2.imread('frame262.jpg')
 #image = cv2.imread('median.jpg')
 #image = cv2.imread('mean.jpg')
     image = np.uint8(frame)
