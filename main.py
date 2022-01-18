@@ -66,15 +66,15 @@ ret,frame = cap.read()
 # split video into component frames
 while ret:
     ret,frame = cap.read()
-    #if count >= 200:
-    try:
-        cv2.imwrite("frame%d.jpg" % count, frame)     # save frame as JPEG file    
-        frames.append(frame)  
-        ret,frame = cap.read()
-        print('Read a new frame: ', ret)
-    except:
-        print('Error: missing frame')
-        continue
+    if count >= 115 and count < 270:
+        try:
+            cv2.imwrite("frame%d.jpg" % count, frame)     # save frame as JPEG file    
+            frames.append(frame)  
+            ret,frame = cap.read()
+            print('Read a new frame: ', ret)
+        except:
+            print('Error: missing frame')
+            continue
     count += 1
 
 
