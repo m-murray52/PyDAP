@@ -6,7 +6,9 @@ exposed phosphor scintillation material
 '''
 import cv2 
 import numpy as np 
-
+import matplotlib.pyplot as plt
+from matplotlib import colors
+from matplotlib.ticker import PercentFormatter
 from region_growing import RegionGrow
 import argparse
 import math
@@ -66,15 +68,25 @@ ret,frame = cap.read()
 # split video into component frames
 while ret:
     ret,frame = cap.read()
-    if count >= 115 and count < 270:
-        try:
+    try:
             cv2.imwrite("frame%d.jpg" % count, frame)     # save frame as JPEG file    
             frames.append(frame)  
             ret,frame = cap.read()
             print('Read a new frame: ', ret)
-        except:
+    except:
             print('Error: missing frame')
             continue
+    """if count >= 115 and count < 270:
+    
+        cv2.imwrite("frame%d.jpg" % count, frame)     # save frame as JPEG file    
+        frames.append(frame)  
+        #ret,frame = cap.read()
+        print('Read a new frame: ', ret)
+    
+    else:
+        ignored_frame = frame"""
+    
+    print(count)
     count += 1
 
 
@@ -91,7 +103,7 @@ frames = np.stack(frames, axis=0)
 # Define function to find median or mean image
 def find_average(frames, average_type):
     if average_type == 'median':
-        return np.median(frames[290:350], axis=0)
+        return np.median(frames, axis=0)
 
     elif average_type == 'mean':
         return np.mean(frames[290:350], axis=0)
@@ -277,19 +289,19 @@ def mask_img(method, gradient, image):
         # define criteria, number of clusters(K) and apply kmeans()
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 1.0)
         K = 2
-        ret, label, center=cv2.kmeans(kmeans_image, K, None, criteria, 30, cv2.KMEANS_RANDOM_CENTERS)
+        ret, label, center=cv2.kmeans(kmeans_image, K, None, criteria, 100, cv2.KMEANS_RANDOM_CENTERS)
 
         # Now convert back into uint8, and make original image
         center = np.uint8(center)
         
         res = center[label.flatten()]
         kmeans_segmented = res.reshape((image.shape))
-        cv2.imshow('kmeans segmented',kmeans_segmented)
+        #cv2.imshow('kmeans segmented',kmeans_segmented)
         #
-        cv2.waitKey(0)
+        #cv2.waitKey(0)
 
         # Save unblurred kmeans image
-        cv2.imwrite('kmeans_segmented_no_blur.png', kmeans_segmented)
+        #cv2.imwrite('kmeans_segmented_no_blur.png', kmeans_segmented)
 
         # Apply Gaussian blur
         blur = cv2.GaussianBlur(kmeans_segmented, (3, 3), 0)
@@ -297,70 +309,42 @@ def mask_img(method, gradient, image):
 
 
 # Create bounding box function
-def bounding_box(src, mask, perspective_transform, area_calibration, width_calibration, height_calibration, kernel_size, iterations = 1, image_height=frame_height, image_width=frame_width):
 
+class BoundingBoxInfo:
 
-    # Square shaped Structuring Element
-    #kernel = np.ones((kernel_size, kernel_size))
-    # Cross shaped structuring element
-    kernel = cv2.getStructuringElement(cv2.MORPH_CROSS , (kernel_size, kernel_size))
-    imgDil = cv2.dilate(mask, kernel, iterations)
-    #closedImg = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-    #cv2.imshow("Closed Image", closedImg)
-    #cv2.waitKey(0)
-    contours, hierarchy = cv2.findContours(imgDil, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    #contours, hierarchy = cv2.findContours(closedImg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-    cnt = contours[0]
+    def __init__(self, src, mask, perspective_transform, area_calibration, width_calibration, height_calibration, kernel_size, iterations = 1) -> None:
+        kernel = cv2.getStructuringElement(cv2.MORPH_CROSS , (kernel_size, kernel_size))
+        imgDil = cv2.dilate(mask, kernel, iterations)
+    
+        contours, hierarchy = cv2.findContours(imgDil, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
-    # Correct video frame perspective 
-    corrected_src = cv2.warpPerspective(src, perspective_transform,(image_width,image_height))
+        cnt = contours[0]
+
+        
    
-    # Count number of non-zero pixels in binary mask
-    non_zero_pixels = cv2.countNonZero(mask)
+        # Count number of non-zero pixels in binary mask
+        non_zero_pixels = cv2.countNonZero(mask)
 
-    # Create Bounding Box   
-    area = cv2.contourArea(cnt)
+        # Create Bounding Box   
+        area = cv2.contourArea(cnt)
    
-    area_non_zero_pixels = non_zero_pixels
-    rect = cv2.minAreaRect(cnt)
-    box = cv2.boxPoints(rect)
-    box = np.int0(box)
-    (x, y), (height, width), angle = rect
+        area_non_zero_pixels = non_zero_pixels
+        rect = cv2.minAreaRect(cnt)
+        self.box = cv2.boxPoints(rect)
+        self.box = np.int0(self.box)
+        (x, y), (width, height), angle = rect
 
-    peri = cv2.arcLength(cnt, True)
-    approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
-    print(len(approx))
-    x, y, w, h = cv2.boundingRect(approx)
+        peri = cv2.arcLength(cnt, True)
+        approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+        print(len(approx))
+        x, y, w, h = cv2.boundingRect(approx)
 
-
+        self.area = area*area_calibration
     
+        self.width = width*width_calibration
+        self.height = height*height_calibration
 
-    correct_calibrated_area = area*area_calibration
-    # had to swap height and width calibration because video is rotated
-    correct_calibrated_width = width*width_calibration
-    correct_calibrated_height = height*height_calibration
-    #correct_calibrate_area_non_zero = non_zero_pixels*area_calibration
 
-    #cv2.drawContours(image=image_copy, contours=contours, contourIdx=-1, color=(0, 255, 0), thickness=2, lineType=cv2.LINE_AA)
-    #can also use cv2.connectedComponentsWithStats
-    #cv2.drawContours(src[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])],[box],0,(0,255, 0),2)
-
-    #logging.info('Time until seed selection window since threshold selection: {} s'.format(time_until_region_growing))
-
-    cv2.drawContours(corrected_src,[box],0,(0,255, 0),2)
-    cv2.putText(corrected_src, "Bounding Box Area: {0:.3g}".format(correct_calibrated_area) + " mm^2", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    #cv2.putText(corrected_src, "Bounding Box Area (px): " + str(int(area)) + " px", (20,  80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(corrected_src, "Bounding Box Height: {0:.3g}".format(correct_calibrated_width) + " mm", (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(corrected_src, "Bounding Width: {0:.3g}".format(correct_calibrated_height) + " mm", (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    #cv2.putText(corrected_src, "Beam Area: {0:.3g}".format(correct_calibrate_area_non_zero) + " mm^2", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    #cv2.putText(corrected_src, "Number non-zero pixels: " + str(int(non_zero_pixels)) + " px", (20, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    #cv2.putText(corrected_src, "Area Calibration Factor: {0:.3g}".format(area_calibration) + " mm^2/px", (20, 280), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    #cv2.putText(corrected_src, "Width Calibration Factor: {0:.3g}".format(width_calibration) + " mm/px", (20, 320), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    #cv2.putText(corrected_src, "Height Calibration Factor: {0:.3g}".format(height_calibration) + " mm/px", (20, 360), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-    
-    
-    return corrected_src
 
 
 def calibrate_height(distance, frame_height=1080):
@@ -490,6 +474,10 @@ def transform_perspective(frame, homography_transform, image_height=frame_height
 homography_transform = calibrate_homography_img.perspective_transform()
 corrected_image = transform_perspective(frame, homography_transform)
 
+# Apply homography to each frame in frames
+corrected_frames = [transform_perspective(frame, homography_transform) for frame in frames[180:210]]
+
+
 # Convert to uint8
 #corrected_image = np.uint8(corrected_image)
 #corrected_image = corrected_image.astype('uint8')*255
@@ -517,7 +505,7 @@ def select_roi(image):
 # select roi
 roi_image, roi = select_roi(corrected_image)
 
-def binary_image(image, roi_img, roi, method):
+def binary_image(image, roi_img, roi):
     
     image = image.astype('uint8')*255
     # creates binary image from input image
@@ -534,40 +522,10 @@ def binary_image(image, roi_img, roi, method):
 
     roi_image, roi = select_roi(image)"""
 
-    if method == 'grey':
-
-    # Grey ROI image
-        grey_roi = cv2.cvtColor(roi_img, cv2.COLOR_BGR2GRAY)
-        cv2.imwrite('grey_roi.png', grey_roi)
-        # Apply white top hat to grey ROI and pass to binary mask function
-        # Apply white top hat to grey image to reduce background illumination
-        white_top_hat_image = apply_top_hat(grey_image, grey_roi)
-        cv2.imwrite('white_top_hat_transform.png', white_top_hat_image)
-
-  
-
-        # Crop white top hat image  
-        cropped_white_top_hat = white_top_hat_image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])]
-
-    # Source mask image
-        src_mask = cropped_white_top_hat
-      
-        greyscale_mask = cv2.bitwise_and(grey_roi, src_mask)
-
-    elif method == 'colour':
-        grey_roi = cv2.cvtColor(roi_img, cv2.COLOR_BGR2GRAY)
-        src_mask = roi_mask = mask_img(args.method, args.gradient, roi_img)
-        cv2.imshow('grey roi', grey_roi)
-        cv2.waitKey(0)
-        cv2.imshow('roi', src_mask)
-        cv2.waitKey(0)
-        # src_mask needs to be binary, so call mask_img()
-        greyscale_mask = cv2.bitwise_and(grey_roi, src_mask)
-
-    elif method == 'kmeans':
-        src_mask = roi_img
-        roi_mask = mask_img(args.method, args.gradient, src_mask)
-        greyscale_mask = cv2.cvtColor(roi_mask, cv2.COLOR_BGR2GRAY)
+    
+    src_mask = roi_img
+    roi_mask = mask_img(args.method, args.gradient, src_mask)
+    greyscale_mask = cv2.cvtColor(roi_mask, cv2.COLOR_BGR2GRAY)
 
     # Apply otsu to roi, then add to greyscale image with black background
     otsu_thresh, otsu_greyscale_roi = cv2.threshold(greyscale_mask, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
@@ -588,20 +546,120 @@ def binary_image(image, roi_img, roi, method):
 
     return binary_mask
 
+
+
+
 # Generate binary mask image from L*a*b* space image or region growing or combination of the two
 #mask_image = maskImg(args.method, roi_image)
-correct_perspective_bin = binary_image(corrected_image, roi_image, roi, args.method)
+correct_perspective_binaries = [binary_image(corrected_frame, corrected_frame[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])], roi) for corrected_frame in corrected_frames]
+
+# Bounding boxes lists
+bounding_boxes_widths = []
+bounding_boxes_heights = []
+bounding_boxes_areas = []
 
 
+# Find the width of each binary by applying bounding box
+for correct_perspective_bin in correct_perspective_binaries:
+    #bounding_box_img = bounding_box(src= image, perspective_transform=homography_transform, mask= correct_perspective_bin, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height, kernel_size= 3, iterations= 1)
+    bounding_boxes = BoundingBoxInfo(src= image, perspective_transform=homography_transform, mask= correct_perspective_bin, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height, kernel_size= 3, iterations= 1)
+    # Exclude outliers
+    if bounding_boxes.width > 4: bounding_boxes_widths.append(bounding_boxes.width) 
+    if bounding_boxes.height > 10: bounding_boxes_heights.append(bounding_boxes.height)
+    if bounding_boxes.area > 500: bounding_boxes_areas.append(bounding_boxes.area)
 
-# Find frame width and height. Use .shape. For the moment process only one frame
-# We convert the resolutions from float to integer.
-#frame_height, frame_width = correct_perspective_bin.shape[:2]
+# Average binary
+average_binary = find_average(frames= correct_perspective_binaries, average_type= "median")
+average_binary = np.uint8(average_binary)
 
+# Find median width
+median_width = np.median(bounding_boxes_widths)
+
+# Standard deviation
+std_w = np.std(bounding_boxes_widths)
+
+# Find median height
+median_height = np.median(bounding_boxes_heights)
+
+# Standard deviation
+std_h = np.std(bounding_boxes_heights)
+
+# Find median area
+median_area = np.median(bounding_boxes_areas)
+
+# Standard deviation
+std_a = np.std(bounding_boxes_areas)
+
+def bounding_box(src, mask, kernel_size, perspective_transform, area_calibration, width_calibration, height_calibration, average_width= median_width, average_height= median_height, average_area= median_area, 
+                    std_a= std_a, std_h =std_h, std_w= std_w,  iterations = 1, image_height=frame_height, image_width=frame_width):
+
+
+    # Square shaped Structuring Element
+    #kernel = np.ones((kernel_size, kernel_size))
+    # Cross shaped structuring element
+    kernel = cv2.getStructuringElement(cv2.MORPH_CROSS , (kernel_size, kernel_size))
+    imgDil = cv2.dilate(mask, kernel, iterations)
+    #closedImg = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    #cv2.imshow("Closed Image", closedImg)
+    #cv2.waitKey(0)
+    contours, hierarchy = cv2.findContours(imgDil, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    #contours, hierarchy = cv2.findContours(closedImg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    cnt = contours[0]
+
+    # Correct video frame perspective 
+    corrected_src = cv2.warpPerspective(src, perspective_transform,(image_width,image_height))
+   
+    # Count number of non-zero pixels in binary mask
+    non_zero_pixels = cv2.countNonZero(mask)
+
+    # Create Bounding Box   
+    area = cv2.contourArea(cnt)
+   
+    area_non_zero_pixels = non_zero_pixels
+    rect = cv2.minAreaRect(cnt)
+    box = cv2.boxPoints(rect)
+    box = np.int0(box)
+    (x, y), (height, width), angle = rect
+
+    peri = cv2.arcLength(cnt, True)
+    approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+    print(len(approx))
+    x, y, w, h = cv2.boundingRect(approx)
+
+
+    
+
+    correct_calibrated_area = area*area_calibration
+    # had to swap height and width calibration because video is rotated
+    correct_calibrated_width = width*width_calibration
+    correct_calibrated_height = height*height_calibration
+    #correct_calibrate_area_non_zero = non_zero_pixels*area_calibration
+
+    #cv2.drawContours(image=image_copy, contours=contours, contourIdx=-1, color=(0, 255, 0), thickness=2, lineType=cv2.LINE_AA)
+    #can also use cv2.connectedComponentsWithStats
+    #cv2.drawContours(src[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])],[box],0,(0,255, 0),2)
+
+    #logging.info('Time until seed selection window since threshold selection: {} s'.format(time_until_region_growing))
+
+    cv2.drawContours(corrected_src,[box],0,(0,255, 0),2)
+    cv2.putText(corrected_src, "Bounding Box Area: {0:.3g}".format(average_area) + "+/- {0:.3g} mm^2".format(std_a), (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(corrected_src, "Bounding Box Width: {0:.3g}".format(average_width) + "+/- {0:.3g} mm".format(std_w), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(corrected_src, "Bounding Box Height: {0:.3g}".format(average_height) + "+/- {0:.3g} mm".format(std_h), (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    #cv2.putText(corrected_src, "Bounding Box Area (px): " + str(int(area)) + " px", (20,  80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    #cv2.putText(corrected_src, "Beam Area: {0:.3g}".format(correct_calibrate_area_non_zero) + " mm^2", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    #cv2.putText(corrected_src, "Number non-zero pixels: " + str(int(non_zero_pixels)) + " px", (20, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    #cv2.putText(corrected_src, "Area Calibration Factor: {0:.3g}".format(area_calibration) + " mm^2/px", (20, 280), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    #cv2.putText(corrected_src, "Width Calibration Factor: {0:.3g}".format(width_calibration) + " mm/px", (20, 320), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    #cv2.putText(corrected_src, "Height Calibration Factor: {0:.3g}".format(height_calibration) + " mm/px", (20, 360), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
+    
+    
+    return corrected_src
 
 
 # Apply contours to cropped_histogram_equalised_product_image to generate bounding box and display area
-masked_frame = bounding_box(src= image, perspective_transform=homography_transform, mask= correct_perspective_bin, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height, kernel_size= 3, iterations= 1)
+masked_frame = bounding_box(src= image, perspective_transform=homography_transform, mask= average_binary, area_calibration= pixel_area, width_calibration= pixel_width, 
+                                height_calibration= pixel_height, kernel_size= 3, iterations= 1)
 cv2.imwrite('masked_frame_w_bb.png', masked_frame)
 
 #cv2.imshow('Bounding box', masked_frame)
@@ -670,7 +728,7 @@ def write_masked_video(frames_list, mask, area_calibration, width_calibration, h
     cap.release()
     cv2.destroyAllWindows()
 
-write_masked_video(frames_list= frames, mask= correct_perspective_bin, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height)
+write_masked_video(frames_list= frames, mask= average_binary, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height)
 
 
 logging.info('Area Calibration Factor: {}'.format(pixel_area))
@@ -685,5 +743,24 @@ logging.info('Distance to transformed plane: {}'.format(distance_to_ref_obj))
 
 
 
+n_bins = 30
 
+# Generate two normal distributions
+dist1 = bounding_boxes_widths
+dist2 = bounding_boxes_heights
+
+
+
+fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
+
+# We can set the number of bins with the *bins* keyword argument.
+axs[0].hist(dist1, bins=n_bins)
+axs[1].hist(dist2, bins=n_bins)
+axs[0].set_xlabel('Width (mm)')
+axs[1].set_xlabel('Height (mm)')
+axs[0].set_title('n= {}'.format(len(bounding_boxes_widths)))
+axs[1].set_title('n= {}'.format(len(bounding_boxes_heights)))
+#axs.set_title('Dimension distribution')
+plt.show()
+print(bounding_boxes_widths)
 
