@@ -313,10 +313,14 @@ def mask_img(method, gradient, image):
 class BoundingBoxInfo:
 
     def __init__(self, src, mask, perspective_transform, area_calibration, width_calibration, height_calibration, kernel_size, iterations = 1) -> None:
-        kernel = cv2.getStructuringElement(cv2.MORPH_CROSS , (kernel_size, kernel_size))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
         imgDil = cv2.dilate(mask, kernel, iterations)
+
+        openImg = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, )
+        #cv2.imshow("Open Image", openImg)
+        #cv2.waitKey(0)
     
-        contours, hierarchy = cv2.findContours(imgDil, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+        contours, hierarchy = cv2.findContours(openImg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
         cnt = contours[0]
 
@@ -326,7 +330,7 @@ class BoundingBoxInfo:
         non_zero_pixels = cv2.countNonZero(mask)
 
         # Create Bounding Box   
-        area = cv2.contourArea(cnt)
+        #area = cv2.contourArea(cnt)
    
         area_non_zero_pixels = non_zero_pixels
         rect = cv2.minAreaRect(cnt)
@@ -339,11 +343,11 @@ class BoundingBoxInfo:
         print(len(approx))
         x, y, w, h = cv2.boundingRect(approx)
 
-        self.area = area*area_calibration
+        #self.area = area*area_calibration
     
         self.width = width*width_calibration
         self.height = height*height_calibration
-
+        self.area = self.width*self.height
 
 
 
@@ -561,6 +565,7 @@ def binary_image(image, roi_img, roi):
 #mask_image = maskImg(args.method, roi_image)
 correct_perspective_binaries = [binary_image(corrected_frame, corrected_frame[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])], roi) for corrected_frame in corrected_frames]
 
+
 # Bounding boxes lists
 bounding_boxes_widths = []
 bounding_boxes_heights = []
@@ -569,12 +574,17 @@ bounding_boxes_areas = []
 
 # Find the width of each binary by applying bounding box
 for correct_perspective_bin in correct_perspective_binaries:
+    #cv2.imshow('binary image', correct_perspective_bin)
+    #cv2.waitKey(0)
     #bounding_box_img = bounding_box(src= image, perspective_transform=homography_transform, mask= correct_perspective_bin, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height, kernel_size= 3, iterations= 1)
-    bounding_boxes = BoundingBoxInfo(src= image, perspective_transform=homography_transform, mask= correct_perspective_bin, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height, kernel_size= 3, iterations= 1)
+    bounding_boxes = BoundingBoxInfo(src= image, perspective_transform=homography_transform, mask= correct_perspective_bin, area_calibration= pixel_area, width_calibration= pixel_width, height_calibration= pixel_height, kernel_size= 5, iterations= 1)
     # Exclude outliers
-    if bounding_boxes.width > 4: bounding_boxes_widths.append(bounding_boxes.width) 
-    if bounding_boxes.height > 10: bounding_boxes_heights.append(bounding_boxes.height)
-    if bounding_boxes.area > 500: bounding_boxes_areas.append(bounding_boxes.area)
+    if bounding_boxes.width > 3: 
+        bounding_boxes_widths.append(bounding_boxes.width) 
+    if bounding_boxes.height > 10: 
+        bounding_boxes_heights.append(bounding_boxes.height)
+    if bounding_boxes.area > 500: 
+        bounding_boxes_areas.append(bounding_boxes.area)
 
 # Average binary
 average_binary = find_average(frames= correct_perspective_binaries, average_type= "median")
@@ -756,10 +766,11 @@ n_bins = 30
 # Generate two normal distributions
 dist1 = bounding_boxes_widths
 dist2 = bounding_boxes_heights
+dist3 = bounding_boxes_areas
 
 
 
-fig, axs = plt.subplots(1, 2, sharey=True, tight_layout=True)
+fig, axs = plt.subplots(1, 3, sharey=True, tight_layout=True)
 
 # We can set the number of bins with the *bins* keyword argument.
 axs[0].hist(dist1, bins=n_bins)
@@ -768,7 +779,17 @@ axs[0].set_xlabel('Width (mm)')
 axs[1].set_xlabel('Height (mm)')
 axs[0].set_title('n= {}'.format(len(bounding_boxes_widths)))
 axs[1].set_title('n= {}'.format(len(bounding_boxes_heights)))
+axs[2].hist(dist3, bins=n_bins)
+axs[2].set_xlabel('Area (mm^2)')
+axs[2].set_title('n= {}'.format(len(bounding_boxes_areas)))
 #axs.set_title('Dimension distribution')
 plt.show()
+
+fig, axs = plt.subplots(1, 1, sharey=True, tight_layout=True)
+
+
 print(bounding_boxes_widths)
+print(len(bounding_boxes_widths))
+print(bounding_boxes_heights)
+print(len(bounding_boxes_heights))
 
