@@ -56,6 +56,7 @@ class Chessboard:
         cv2.drawChessboardCorners(self.img, (9,6), self.corners2, ret)
         #cv2.imshow('img', self.img)
         #cv2.waitKey()
+        cv2.imwrite('chessboard_corners.png', self.img)
         print(self.corners2)
 
         self.x0 = self.corners2[0][0][0]

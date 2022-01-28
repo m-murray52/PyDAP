@@ -429,7 +429,7 @@ else:
     cv2.waitKey(0)
     calibration_img = cv2.imread('chessboard.jpg')
     calibration_img = np.uint8(calibration_img)
-
+    calibration_img_copy = calibration_img.copy()
 
 
 # Enhance contrast of blue, green, and red channels using histogram equalisation
@@ -474,6 +474,12 @@ def transform_perspective(frame, homography_transform, image_height=frame_height
 homography_transform = calibrate_homography_img.perspective_transform()
 corrected_image = transform_perspective(frame, homography_transform)
 
+cv2.imshow('Calibration Image', calibration_img_copy)
+cv2.waitKey(0)
+
+corrected_chessboard = transform_perspective(calibration_img, homography_transform)
+cv2.imwrite('corrected_chessboard.png', corrected_chessboard)
+
 # Apply homography to each frame in frames
 corrected_frames = [transform_perspective(frame, homography_transform) for frame in frames[180:210]]
 
@@ -482,7 +488,9 @@ corrected_frames = [transform_perspective(frame, homography_transform) for frame
 #corrected_image = np.uint8(corrected_image)
 #corrected_image = corrected_image.astype('uint8')*255
 cv2.imshow('frame', frame)
+cv2.imwrite('uncorrected_frame.png', frame)
 cv2.imshow('corrected image', corrected_image)
+cv2.imwrite('corrected_frame.png', corrected_image)
 cv2.waitKey(0)
 
 # Convert the median/mean image to grayscale
