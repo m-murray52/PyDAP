@@ -313,7 +313,7 @@ def mask_img(method, gradient, image):
 class BoundingBoxInfo:
 
     def __init__(self, src, mask, perspective_transform, area_calibration, width_calibration, height_calibration, kernel_size, iterations = 1) -> None:
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (kernel_size, kernel_size))
         imgDil = cv2.dilate(mask, kernel, iterations)
 
         openImg = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, )
