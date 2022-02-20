@@ -425,7 +425,7 @@ if args.average == 'median' or args.average == 'mean':
     image = np.uint8(image)
 
 else:
-    frame = cv2.imread('frame210.jpg')
+    frame = cv2.imread('frame205.jpg')
 #image = cv2.imread('median.jpg')
 #image = cv2.imread('mean.jpg')
     image = np.uint8(frame)
@@ -487,6 +487,10 @@ cv2.imwrite('corrected_chessboard.png', corrected_chessboard)
 # Apply homography to each frame in frames
 corrected_frames = [transform_perspective(frame, homography_transform) for frame in frames[180:210]]
 
+# Perspective corrected frame
+#perspective_corrected_frame = transform_perspective(image, homography_transform)
+
+# Write perspective corrected frame to file
 
 # Convert to uint8
 #corrected_image = np.uint8(corrected_image)
@@ -591,24 +595,24 @@ average_binary = find_average(frames= correct_perspective_binaries, average_type
 average_binary = np.uint8(average_binary)
 
 # Find median width
-median_width = np.median(bounding_boxes_widths)
+mean_width = np.mean(bounding_boxes_widths)
 
 # Standard deviation
 std_w = np.std(bounding_boxes_widths)
 
 # Find median height
-median_height = np.median(bounding_boxes_heights)
+mean_height = np.mean(bounding_boxes_heights)
 
 # Standard deviation
 std_h = np.std(bounding_boxes_heights)
 
 # Find median area
-median_area = np.median(bounding_boxes_areas)
+mean_area = np.mean(bounding_boxes_areas)
 
 # Standard deviation
 std_a = np.std(bounding_boxes_areas)
 
-def bounding_box(src, mask, kernel_size, perspective_transform, area_calibration, width_calibration, height_calibration, average_width= median_width, average_height= median_height, average_area= median_area, 
+def bounding_box(src, mask, kernel_size, perspective_transform, area_calibration, width_calibration, height_calibration, average_width= mean_width, average_height= mean_height, average_area= mean_area, 
                     std_a= std_a, std_h =std_h, std_w= std_w,  iterations = 1, image_height=frame_height, image_width=frame_width):
 
 
@@ -660,9 +664,9 @@ def bounding_box(src, mask, kernel_size, perspective_transform, area_calibration
     #logging.info('Time until seed selection window since threshold selection: {} s'.format(time_until_region_growing))
 
     cv2.drawContours(corrected_src,[box],0,(0,255, 0),2)
-    cv2.putText(corrected_src, "Bounding Box Area: {0:.3g}".format(average_area) + "+/- {0:.3g} mm^2".format(std_a), (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(corrected_src, "Bounding Box Width: {0:.3g}".format(average_width) + "+/- {0:.3g} mm".format(std_w), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    cv2.putText(corrected_src, "Bounding Box Height: {0:.3g}".format(average_height) + "+/- {0:.3g} mm".format(std_h), (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv2.putText(corrected_src, "Bounding Box Area: {0:.3g}".format(average_area) + "+/- {0:.3g} mm^2".format(std_a), (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
+    cv2.putText(corrected_src, "Bounding Box Width: {0:.3g}".format(average_width) + "+/- {0:.3g} mm".format(std_w), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
+    cv2.putText(corrected_src, "Bounding Box Height: {0:.3g}".format(average_height) + "+/- {0:.3g} mm".format(std_h), (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
     #cv2.putText(corrected_src, "Bounding Box Area (px): " + str(int(area)) + " px", (20,  80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     #cv2.putText(corrected_src, "Beam Area: {0:.3g}".format(correct_calibrate_area_non_zero) + " mm^2", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     #cv2.putText(corrected_src, "Number non-zero pixels: " + str(int(non_zero_pixels)) + " px", (20, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
