@@ -16,6 +16,7 @@ import logging
 import homography
 from skimage import transform
 from skimage.io import imread, imshow
+from scipy.stats import norm
 
 
 # load video and select frame averaging method
@@ -478,8 +479,8 @@ def transform_perspective(frame, homography_transform, image_height=frame_height
 homography_transform = calibrate_homography_img.perspective_transform()
 corrected_image = transform_perspective(frame, homography_transform)
 
-cv2.imshow('Calibration Image', calibration_img_copy)
-cv2.waitKey(0)
+#cv2.imshow('Calibration Image', calibration_img_copy)
+#cv2.waitKey(0)
 
 corrected_chessboard = transform_perspective(calibration_img, homography_transform)
 cv2.imwrite('corrected_chessboard.png', corrected_chessboard)
@@ -664,9 +665,9 @@ def bounding_box(src, mask, kernel_size, perspective_transform, area_calibration
     #logging.info('Time until seed selection window since threshold selection: {} s'.format(time_until_region_growing))
 
     cv2.drawContours(corrected_src,[box],0,(0,255, 0),2)
-    cv2.putText(corrected_src, "Bounding Box Area: {0:.3g}".format(average_area) + "+/- {0:.3g} mm^2".format(std_a), (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
-    cv2.putText(corrected_src, "Bounding Box Width: {0:.3g}".format(average_width) + "+/- {0:.3g} mm".format(std_w), (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
-    cv2.putText(corrected_src, "Bounding Box Height: {0:.3g}".format(average_height) + "+/- {0:.3g} mm".format(std_h), (20, 120), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
+    cv2.putText(corrected_src, "Bounding Box Area: {0:.3g}".format(average_area) + "+/-{0:.3g} mm^2".format(std_a), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
+    cv2.putText(corrected_src, "Bounding Box Width: {0:.3g}".format(average_width) + "+/- {0:.3g} mm".format(std_w), (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
+    cv2.putText(corrected_src, "Bounding Box Height: {0:.3g}".format(average_height) + "+/- {0:.3g} mm".format(std_h), (20, 150), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
     #cv2.putText(corrected_src, "Bounding Box Area (px): " + str(int(area)) + " px", (20,  80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     #cv2.putText(corrected_src, "Beam Area: {0:.3g}".format(correct_calibrate_area_non_zero) + " mm^2", (20, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     #cv2.putText(corrected_src, "Number non-zero pixels: " + str(int(non_zero_pixels)) + " px", (20, 240), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
@@ -762,6 +763,19 @@ logging.info('Frame Width: {}'.format(frame_width))
 logging.info('Frame Height: {}'.format(frame_height))
 logging.info('Distance to transformed plane: {}'.format(distance_to_ref_obj))
 
+# Importing library
+import csv
+  
+# data to be written row-wise in csv fil
+data = [['Geeks'], [4], ['geeks !']]
+  
+# opening the csv file in 'w+' mode
+file = open('g4g.csv', 'w+', newline ='')
+  
+# writing the data into the file
+with file:    
+    write = csv.writer(file)
+    write.writerows(data)
 
 
 
@@ -776,8 +790,8 @@ dist3 = bounding_boxes_areas
 
 fig, axs = plt.subplots(1, 3, sharey=True, tight_layout=True)
 
-# We can set the number of bins with the *bins* keyword argument.
-axs[0].hist(dist1, bins=n_bins)
+
+
 axs[1].hist(dist2, bins=n_bins)
 axs[0].set_xlabel('Width (mm)')
 axs[1].set_xlabel('Height (mm)')
@@ -789,7 +803,9 @@ axs[2].set_title('n= {}'.format(len(bounding_boxes_areas)))
 #axs.set_title('Dimension distribution')
 plt.show()
 
-fig, axs = plt.subplots(1, 1, sharey=True, tight_layout=True)
+#fig, axs = plt.subplots(1, 1, sharey=True, tight_layout=True)
+
+
 
 
 print(bounding_boxes_widths)
