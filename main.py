@@ -302,7 +302,7 @@ def mask_img(method, gradient, image):
         #cv2.waitKey(0)
 
         # Save unblurred kmeans image
-        #cv2.imwrite('kmeans_segmented_no_blur.png', kmeans_segmented)
+        cv2.imwrite('kmeans_segmented.png', kmeans_segmented)
 
         # Apply Gaussian blur
         blur = cv2.GaussianBlur(kmeans_segmented, (3, 3), 0)
@@ -435,6 +435,8 @@ else:
     calibration_img = cv2.imread('chessboard.jpg')
     calibration_img = np.uint8(calibration_img)
     calibration_img_copy = calibration_img.copy()
+
+
 
 
 # Enhance contrast of blue, green, and red channels using histogram equalisation
