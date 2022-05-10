@@ -22,7 +22,7 @@ from scipy.stats import norm
 # load video and select frame averaging method
 parser = argparse.ArgumentParser(description='Code for calculating the height, width, and area of an x-ray beam by analysis of images of exposed phosphor scintillation material')
 parser.add_argument("--video", type=str, required= True, help='path to image file')
-
+parser.add_argument("--output", type=str, required= True, help='name for output video')
 args = parser.parse_args()
 
 start_time = cv2.getTickCount()
@@ -253,7 +253,7 @@ def binary_image(image, roi_img, roi):
     
 # Find median/mean image
 
-frame = cv2.imread('frame231.jpg')
+frame = cv2.imread('frame190.jpg')
 #image = cv2.imread('median.jpg')
 #image = cv2.imread('mean.jpg')
 image = np.uint8(frame)
@@ -312,7 +312,7 @@ corrected_chessboard = transform_perspective(calibration_img, homography_transfo
 cv2.imwrite('corrected_chessboard.png', corrected_chessboard)
 
 # Apply homography to each frame in frames
-corrected_frames = [transform_perspective(frame, homography_transform) for frame in frames[231:261]]
+corrected_frames = [transform_perspective(frame, homography_transform) for frame in frames[190:210]]
 
 # Show original frame and perspective corrected frame
 cv2.imshow('frame', frame)
