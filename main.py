@@ -22,13 +22,7 @@ from scipy.stats import norm
 # load video and select frame averaging method
 parser = argparse.ArgumentParser(description='Code for calculating the height, width, and area of an x-ray beam by analysis of images of exposed phosphor scintillation material')
 parser.add_argument("--video", type=str, required= True, help='path to image file')
-parser.add_argument("--average", type=str, required= False, help='select method for averaging frames: type mean" or "median" or "no" for no average calculation, instead an image near middle of recording is selected')
-parser.add_argument("--threshold", type=str, required=False, help="To estimate 25max intensity type '25max'. By default a user selected threshold is used via trackbar.")    
-parser.add_argument("--method", type=str, required= False, help="select colour filtering (colour), greyscale (grey), or 'kmeans' to use kmeans clustering")
-parser.add_argument("--gradient", type=str, required= False, help="type 'yes' to use edge enhanced threshold, for use with grey method")
 
-parser.add_argument("--output", type=str, required=False, help='enter the name of the output video including format (.mp4 or .avi)')
-parser.add_argument("--distance", type=float, required=False, help='Enter the distance from the camera to the phosphor sheet in mm')
 args = parser.parse_args()
 
 start_time = cv2.getTickCount()
@@ -161,6 +155,10 @@ def mask_img(image):
     blur = cv2.GaussianBlur(kmeans_segmented, (3, 3), 0)
     return blur
 
+def distance_from_camera(focal_length, img_ref_obj_sensor, width_ref_obj):
+
+    distance = (width_ref_obj*focal_length)/img_ref_obj_sensor
+    return distance
 
 # Create bounding box function
 
@@ -208,6 +206,51 @@ def distance_from_camera(focal_length, img_ref_obj_sensor, width_ref_obj):
     distance = (width_ref_obj*focal_length)/img_ref_obj_sensor
     return distance
 
+def transform_perspective(frame, homography_transform, image_height=frame_height, image_width=frame_width):
+    return cv2.warpPerspective(frame,homography_transform,(image_width,image_height))
+
+# ROI seletor
+def select_roi(image):
+    # Select rectangular region of interest from average grayscale image that approximately corresponds to the beam area
+    # Select ROI
+    from_centre = False
+    roi = cv2.selectROI(image, from_centre)
+    # Crop roi image, needed to create structuring element
+    cropped_roi = image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])]
+    return cropped_roi, roi
+
+def binary_image(image, roi_img, roi):    
+    
+    image = image.astype('uint8')*255
+    # Convert image to greyscale
+    grey_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # Load ROI image
+    src_mask = roi_img
+
+    # Generate mask from ROI by applying k-means clustering, generates a blurred two-toned colour image
+    roi_mask = mask_img(src_mask)
+
+    # Convert the mask to greyscale
+    greyscale_mask = cv2.cvtColor(roi_mask, cv2.COLOR_BGR2GRAY)
+
+    # Apply otsu threshold to roi
+    otsu_thresh, otsu_greyscale_roi = cv2.threshold(greyscale_mask, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    # Save the Otsu (binary) image to a file
+    cv2.imwrite('otsu_roi.png', otsu_greyscale_roi)
+
+    # Create black background with dimensions of greyscale image; grey image is now just a black background
+    grey_image[:,:] = np.ones(grey_image.shape[:2])
+
+    # Add binary mask to original greyscale image ; grey image is now a black background with white pixels where the beam should be
+    grey_image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])] = otsu_greyscale_roi
+
+    # Apply Otsu threshold to masked image to create image to use for seed selection
+    ret, binary_mask = cv2.threshold(grey_image, otsu_thresh, 255, cv2.THRESH_BINARY)
+        
+    return binary_mask
+    
 # Find median/mean image
 
 frame = cv2.imread('frame231.jpg')
@@ -257,9 +300,6 @@ square_width_on_sensor = sensor_pixel_width*square_width_pix
 # Distance from ref obj to camera
 distance_to_ref_obj = distance_from_camera(3.6, square_width_on_sensor, square_width_mm)
 
-def transform_perspective(frame, homography_transform, image_height=frame_height, image_width=frame_width):
-    return cv2.warpPerspective(frame,homography_transform,(image_width,image_height))
-    
 
 # Correct perspective of image 
 homography_transform = calibrate_homography_img.perspective_transform()
@@ -281,51 +321,10 @@ cv2.imshow('corrected image', corrected_image)
 cv2.imwrite('corrected_frame.png', corrected_image)
 cv2.waitKey(0)
 
-# ROI seletor
-def select_roi(image):
-    # Select rectangular region of interest from average grayscale image that approximately corresponds to the beam area
-    # Select ROI
-    from_centre = False
-    roi = cv2.selectROI(image, from_centre)
-    # Crop roi image, needed to create structuring element
-    cropped_roi = image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])]
-    return cropped_roi, roi
+
 
 # select roi
 roi_image, roi = select_roi(corrected_image)
-
-def binary_image(image, roi_img, roi):    
-    
-    image = image.astype('uint8')*255
-    # Convert image to greyscale
-    grey_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Load ROI image
-    src_mask = roi_img
-
-    # Generate mask from ROI by applying k-means clustering, generates a blurred two-toned colour image
-    roi_mask = mask_img(src_mask)
-
-    # Convert the mask to greyscale
-    greyscale_mask = cv2.cvtColor(roi_mask, cv2.COLOR_BGR2GRAY)
-
-    # Apply otsu threshold to roi
-    otsu_thresh, otsu_greyscale_roi = cv2.threshold(greyscale_mask, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-
-    # Save the Otsu (binary) image to a file
-    cv2.imwrite('otsu_roi.png', otsu_greyscale_roi)
-
-    # Create black background with dimensions of greyscale image; grey image is now just a black background
-    grey_image[:,:] = np.ones(grey_image.shape[:2])
-
-    # Add binary mask to original greyscale image ; grey image is now a black background with white pixels where the beam should be
-    grey_image[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])] = otsu_greyscale_roi
-
-    # Apply Otsu threshold to masked image to create image to use for seed selection
-    ret, binary_mask = cv2.threshold(grey_image, otsu_thresh, 255, cv2.THRESH_BINARY)
-        
-    return binary_mask
-
 
 # Generate binary mask images from each perspective corrected frame
 correct_perspective_binaries = [binary_image(corrected_frame, corrected_frame[int(roi[1]):int(roi[1]+roi[3]), int(roi[0]):int(roi[0]+roi[2])], roi) for corrected_frame in corrected_frames]
@@ -378,6 +377,9 @@ std_a = np.std(bounding_boxes_areas)
 def bounding_box(src, mask, kernel_size, perspective_transform, area_calibration, width_calibration, height_calibration, average_width= mean_width, average_height= mean_height, average_area= mean_area, 
                     std_a= std_a, std_h =std_h, std_w= std_w,  iterations = 1, image_height=frame_height, image_width=frame_width):
 
+    # Apply inverse homography to mask, so it is in the uncorrected perspective
+    mask = cv2.warpPerspective(mask, perspective_transform,(image_width,image_height))
+
     # Square shaped Structuring Element
     #kernel = np.ones((kernel_size, kernel_size))
     # Cross shaped structuring element
@@ -386,12 +388,14 @@ def bounding_box(src, mask, kernel_size, perspective_transform, area_calibration
     openedImg = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
     #cv2.imshow("Opened Image", openedImg)
     #cv2.waitKey(0)
+
+
     contours, hierarchy = cv2.findContours(openedImg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     #contours, hierarchy = cv2.findContours(closedImg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     cnt = contours[0]
 
     # Correct video frame perspective 
-    corrected_src = cv2.warpPerspective(src, perspective_transform,(image_width,image_height))
+    #corrected_src = cv2.warpPerspective(src, perspective_transform,(image_width,image_height))
    
     # Count number of non-zero pixels in binary mask
     non_zero_pixels = cv2.countNonZero(mask)
@@ -410,18 +414,23 @@ def bounding_box(src, mask, kernel_size, perspective_transform, area_calibration
     print(len(approx))
     x, y, w, h = cv2.boundingRect(approx)
 
+    # Can I correct perspective of binary mask rather than src? Such that the output video shows the original perspective but with accurate measurements.
+    
     # Draw the contours and display info
-    cv2.drawContours(corrected_src,[box],0,(0,255, 0),2)
-    cv2.putText(corrected_src, "Bounding Box Area: {0:.3g}".format(average_area) + "+/-{0:.3g} mm^2".format(std_a), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
-    cv2.putText(corrected_src, "Bounding Box Width: {0:.3g}".format(average_width) + "+/- {0:.3g} mm".format(std_w), (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
-    cv2.putText(corrected_src, "Bounding Box Height: {0:.3g}".format(average_height) + "+/- {0:.3g} mm".format(std_h), (20, 150), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
+    cv2.drawContours(src,[box],0,(0,255, 0),2)
+    cv2.putText(src, "Bounding Box Area: {0:.3g}".format(average_area) + "+/-{0:.3g} mm^2".format(std_a), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
+    cv2.putText(src, "Bounding Box Width: {0:.3g}".format(average_width) + "+/- {0:.3g} mm".format(std_w), (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
+    cv2.putText(src, "Bounding Box Height: {0:.3g}".format(average_height) + "+/- {0:.3g} mm".format(std_h), (20, 150), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
 
-    return corrected_src
+    return src
 
 print(type(image))
 print('here3!')
 # Apply contours to cropped_histogram_equalised_product_image to generate bounding box and display area
-masked_frame = bounding_box(src= image, perspective_transform=homography_transform, mask= average_binary, area_calibration= pixel_area, width_calibration= pixel_width, 
+
+# Inverse homography
+homography_inverse = np.linalg.inv(homography_transform)
+masked_frame = bounding_box(src= image, perspective_transform=homography_inverse, mask= average_binary, area_calibration= pixel_area, width_calibration= pixel_width, 
                                 height_calibration= pixel_height, kernel_size= 5, iterations= 1)
 cv2.imshow('Masked Frame', masked_frame)
 cv2.waitKey(0)
