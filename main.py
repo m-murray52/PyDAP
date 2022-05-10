@@ -205,13 +205,13 @@ def binary_image(image, roi_img, roi):
 # Function to apply bounding box to correct_perspective_binaries
 def bounding_box(src, mask, kernel_size, perspective_transform, average_width, average_height, average_area, 
                     std_a, std_h, std_w, image_height, image_width):
-    print(type(mask))
+    #print('Type mask: ', type(mask))
+    #print('Perspective transform', perspective_transform)
     # Apply inverse homography to mask, so it is in the uncorrected perspective
-
-    try:
-        warped_mask = cv2.warpPerspective(mask, perspective_transform,(image_width,image_height))
-    except ValueError:
-        return print(type(mask))
+    #print(image_width, image_height)
+    
+    warped_mask = cv2.warpPerspective(mask, perspective_transform,(image_width,image_height))
+    
 
 
     # Square shaped Structuring Element
@@ -254,7 +254,7 @@ def bounding_box(src, mask, kernel_size, perspective_transform, average_width, a
     cv2.drawContours(src,[box],0,(0,255, 0),2)
     cv2.putText(src, "Bounding Box Area: {0:.3g}".format(average_area) + "+/-{0:.3g} mm^2".format(std_a), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
     cv2.putText(src, "Bounding Box Width: {0:.3g}".format(average_width) + "+/- {0:.3g} mm".format(std_w), (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
-    cv2.putText(src, "Bounding Box Height: {0:.3g}".format(average_height) + "+/- {0:.3g} mm".format(std_h), (20, 150), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
+    cv2.putText(src, "Bounding Box Width: {0:.3g}".format(average_height) +  "+/- {0:.3g} mm".format(std_h), (20, 150), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2)
 
     return src
 
@@ -276,7 +276,7 @@ logging.info('Time of masked image creation: {} s'.format(bounding_box_time))'''
 
 # Function to write video
 
-def write_masked_video(cap, frames_list, mask, video, frame_width, frame_height, fps, perspective_transform, output_video_name, 
+def write_masked_video(frames_list, mask, video, frame_width, frame_height, fps, perspective_transform, output_video_name, 
                         kernel_size, average_width, average_height, average_area, std_a, std_h, std_w):
     
 
@@ -294,13 +294,13 @@ def write_masked_video(cap, frames_list, mask, video, frame_width, frame_height,
         try:
 
         # Read frame
-            _, masked_frame = video_cap.read()
+            ret, masked_frame = video_cap.read()
             count += 1
 
             src = masked_frame
         # Apply bounding box to frame 
-            masked_frame = bounding_box(src, perspective_transform, mask, kernel_size, average_width, average_height, average_area, std_a, std_h, std_w, 
-                                        image_height= frame_height, image_width=frame_width)
+            masked_frame = bounding_box(src, mask, kernel_size, perspective_transform, average_width, average_height, average_area, 
+                    std_a, std_h, std_w, image_height = frame_height, image_width = frame_width)
             #cv2.imshow('masked frame', masked_frame)
             #cv2.waitKey(0)
         # Apply contours
@@ -317,8 +317,7 @@ def write_masked_video(cap, frames_list, mask, video, frame_width, frame_height,
             print('Masked frame dimensions: ', masked_frame.shape[:2])
             break
 
-    cap.release()
-    cv2.destroyAllWindows()
+    
 
 
 
@@ -372,7 +371,7 @@ def main():
 
     # Convert images to 4d ndarray, size(n, nrows, ncols, 3)
     frames = np.stack(frames, axis=0)
-    frame = cv2.imread('frame231.jpg')
+    frame = cv2.imread('frame190.jpg')
     #image = cv2.imread('median.jpg')
     #image = cv2.imread('mean.jpg')
     image = np.uint8(frame)
@@ -419,7 +418,7 @@ def main():
     corrected_chessboard = transform_perspective(calibration_img, homography_transform, frame_height, frame_width)
     cv2.imwrite('corrected_chessboard.png', corrected_chessboard)
 
-    corrected_frames = [transform_perspective(frame, homography_transform, frame_height, frame_width) for frame in frames[231:261]]
+    corrected_frames = [transform_perspective(frame, homography_transform, frame_height, frame_width) for frame in frames[190:210]]
     # Show original frame and perspective corrected frame
     cv2.imshow('frame', frame)
     cv2.imwrite('uncorrected_frame.png', frame)
@@ -454,6 +453,7 @@ def main():
 
     average_binary = find_average(frames= correct_perspective_binaries)
     average_binary = np.uint8(average_binary)
+    average_binary_copy = average_binary.copy()
     cv2.imshow('average', average_binary)
     cv2.waitKey(0)
 
@@ -477,9 +477,8 @@ def main():
 
     # Inverse homography
     homography_inverse = np.linalg.inv(homography_transform)
-
-    print(average_binary.dtype)
-
+    
+    
     masked_frame = bounding_box(src= image, perspective_transform=homography_inverse, mask= average_binary, kernel_size= 5, 
                                 average_width= mean_width, average_height= mean_height, average_area= mean_area,std_a= std_a, std_h= std_h, std_w= std_w, 
                                 image_height= frame_height, image_width= frame_width)
@@ -488,12 +487,15 @@ def main():
     cv2.waitKey(0)
     cv2.imwrite('masked_frame_w_bb.png', masked_frame)
 
+    
     # Create video with masked frames
-    write_masked_video(cap, frames_list= frames, mask= average_binary, video= args.video, frame_width=frame_width, 
-                        frame_height=frame_height, fps = fps, perspective_transform= homography_inverse, 
+   
+    write_masked_video(frames_list= frames, mask= average_binary_copy, video= args.video, frame_width=frame_width, 
+                        frame_height=frame_height, fps = fps, perspective_transform= np.linalg.inv(homography_transform), 
                         output_video_name=args.output, kernel_size=5, average_width=mean_width, average_height=mean_height, 
-                        average_area=mean_area, std_w= std_w, std_h=std_h, std_a=std_a)
-
+                        average_area=mean_area, std_a= std_a, std_h=std_h, std_w=std_w)
+    cap.release()
+    cv2.destroyAllWindows()
     end_time =cv2.getTickCount()
     total_time = (end_time - start_time)/cv2.getTickFrequency()
     logging.info('Time of masked image creation from start: {} s'.format(total_time))
