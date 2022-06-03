@@ -9,14 +9,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
-from region_growing import RegionGrow
 import argparse
-import math
 import logging 
 import homography
-from skimage import transform
-from skimage.io import imread, imshow
-from scipy.stats import norm
+
 
 
 # Define function to find median or mean image
@@ -509,5 +505,7 @@ def main():
     logging.info('Distance to transformed plane: {}'.format(distance_to_ref_obj))
 
 if __name__ == '__main__':
+    print(__doc__)
     main()
-
+    
+    
