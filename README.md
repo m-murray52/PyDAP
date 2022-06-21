@@ -9,7 +9,7 @@ PyDAP (Python Dose Area Product) was originally developed as a master's research
 ## What does PyDAP do?
 
 PyDAP applies computer vision methods to images of phosphorescent scintillation material, exposed to x-rays, in order to extract the area and dimensions of the exposed region of material.
-After extraction of this information it then applies a mask to the original image which displayes the area nad dimensions of the beam. Note that there is an almost 1:1 correlation between x-ray beam
+After extraction of this information it then applies a mask to the original image which displays the area and dimensions of the beam. Note that there is an almost 1:1 correlation between x-ray beam
 area and the area of phosphorescing scintillation material. 
 
 ## Who is PyDAP for?
